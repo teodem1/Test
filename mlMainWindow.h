@@ -117,6 +117,7 @@ protected slots:
 	void BuildFinished();
 	void ContextMenuRequested();
 	void SteamUpdate();
+	void OnConvertClicked();
 
 protected:
 	void closeEvent(QCloseEvent* Event);
@@ -150,6 +151,7 @@ protected:
 
 	QPushButton* mBuildButton;
 	QPushButton* mDvarsButton;
+	QPushButton* mConvertButton;
 	QCheckBox* mCompileEnabledWidget;
 	QComboBox* mCompileModeWidget;
 	QCheckBox* mLightEnabledWidget;
@@ -167,6 +169,8 @@ protected:
 	QLineEdit* mExport2BinTargetDirWidget;
 
 	bool mTreyarchTheme;
+	bool mIsConverting;
+
 	QString mBuildLanguage;
 
 	QStringList mShippedMapList;
@@ -185,6 +189,9 @@ protected:
 	QString mToolsPath;
 
 	QStringList mRunDvars;
+
+	QMenuBar* MenuBar;
+	QToolBar* ToolBar;
 };
 
 class Export2BinGroupBox : public QGroupBox
