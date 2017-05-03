@@ -1613,6 +1613,8 @@ void Export2BinGroupBox::dragLeaveEvent(QDragLeaveEvent* event)
 
 void mlMainWindow::OnConvertClicked()
 {
+	if(!mIsConverting)
+	{
 		auto Reply = QMessageBox::information(this,"Converter Warning!","This will take a long time, are you sure you wish to continue?",QMessageBox::Yes | QMessageBox::No);
 		if(Reply == QMessageBox::Yes)
 		{
@@ -1624,4 +1626,8 @@ void mlMainWindow::OnConvertClicked()
 
 			StartBuildThread(Commands);
 		}
+	}
+	else
+	{
+		QMessageBox::warning(this,"Already Converting","Conversion is already in progress!",QMessageBox::Ok); //Cheeky DLC5 Comment Here.
 }
