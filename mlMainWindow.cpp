@@ -1630,4 +1630,5 @@ void mlMainWindow::OnConvertClicked()
 	else
 	{
 		QMessageBox::warning(this,"Already Converting","Conversion is already in progress!",QMessageBox::Ok); //Cheeky DLC5 Comment Here.
+	}
 }
