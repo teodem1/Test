@@ -1613,23 +1613,15 @@ void Export2BinGroupBox::dragLeaveEvent(QDragLeaveEvent* event)
 
 void mlMainWindow::OnConvertClicked()
 {
-	if(mIsConverting)
-	{
-		mOutputWidget->appendPlainText("Aborted Conversion!");
-		mIsConverting = false;
-	}
-	else
-	{
 		auto Reply = QMessageBox::information(this,"Converter Warning!","This will take a long time, are you sure you wish to continue?",QMessageBox::Yes | QMessageBox::No);
 		if(Reply == QMessageBox::Yes)
 		{
 			mOutputWidget->appendPlainText("Starting Convertion!");
 			mIsConverting = true;
-			//Do Things Carl
+
 			QList<QPair<QString, QStringList>> Commands;
 			Commands.append(QPair<QString, QStringList>(QString("%1/bin/linker_modtools.exe").arg(mToolsPath), QStringList() << "-language" << "english" << "-convertall" << "-verbose"));
 
 			StartBuildThread(Commands);
 		}
-	}
 }
