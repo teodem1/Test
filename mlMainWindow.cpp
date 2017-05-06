@@ -325,6 +325,10 @@ mlMainWindow::mlMainWindow()
 	connect(mDvarsButton, SIGNAL(clicked()), this, SLOT(OnEditDvars()));
 	ActionsLayout->addWidget(mDvarsButton);
 
+	mConvertButton = new QPushButton("Convert");
+	connect(mConvertButton, SIGNAL(clicked()), this, SLOT(OnConvertButton()));
+	ActionsLayout->addWidget(mConvertButton);
+
 	mIgnoreErrorsWidget = new QCheckBox("Ignore Errors");
 	ActionsLayout->addWidget(mIgnoreErrorsWidget);
 
@@ -518,6 +522,8 @@ void mlMainWindow::UpdateDB()
 
 void mlMainWindow::StartBuildThread(const QList<QPair<QString, QStringList>>& Commands)
 {
+	if(mBuildThread == NULL)
+	{
 	mBuildButton->setText("Cancel");
 	mOutputWidget->clear();
 
@@ -525,6 +531,11 @@ void mlMainWindow::StartBuildThread(const QList<QPair<QString, QStringList>>& Co
 	connect(mBuildThread, SIGNAL(OutputReady(QString)), this, SLOT(BuildOutputReady(QString)));
 	connect(mBuildThread, SIGNAL(finished()), this, SLOT(BuildFinished()));
 	mBuildThread->start();
+	}
+	else
+	{
+		QMessageBox::information(this,"Build In Progress","There is already a build in progress, please wait.",QMessageBox::Button::Ok);
+	}
 }
 
 void mlMainWindow::StartConvertThread(QStringList& pathList, QString& outputDir, bool allowOverwrite)
@@ -1549,9 +1560,21 @@ void mlMainWindow::BuildOutputReady(QString Output)
 
 void mlMainWindow::BuildFinished()
 {
+	mConvertButton->setDisabled(false);
+
 	mBuildButton->setText("Build");
 	mBuildThread->deleteLater();
 	mBuildThread = NULL;
+}
+
+void mlMainWindow::OnConvertButton()
+{
+	mConvertButton->setDisabled(true);
+
+	QList<QPair<QString, QStringList>> Commands;
+	Commands.append(QPair<QString, QStringList>(QString("%1/bin/linker_modtools.exe").arg(mToolsPath), QStringList() << "-language" << "english" << "-convertall" << "-verbose"));
+
+	StartBuildThread(Commands);
 }
 
 Export2BinGroupBox::Export2BinGroupBox(QWidget* parent, mlMainWindow* parent_window) : QGroupBox(parent), parentWindow(parent_window)

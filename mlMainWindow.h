@@ -117,6 +117,7 @@ protected slots:
 	void BuildFinished();
 	void ContextMenuRequested();
 	void SteamUpdate();
+	void OnConvertButton();
 
 protected:
 	void closeEvent(QCloseEvent* Event);
@@ -135,6 +136,9 @@ protected:
 
 	void InitExport2BinGUI();
 
+	bool mTreyarchTheme;
+	quint64 mFileId;
+
 	QAction* mActionFileNew;
 	QAction* mActionFileAssetEditor;
 	QAction* mActionFileLevelEditor;
@@ -146,45 +150,47 @@ protected:
 	QAction* mActionHelpAbout;
 
 	QTreeWidget* mFileListWidget;
+
 	QPlainTextEdit* mOutputWidget;
 
 	QPushButton* mBuildButton;
 	QPushButton* mDvarsButton;
+	QPushButton* mConvertButton;
+
 	QCheckBox* mCompileEnabledWidget;
-	QComboBox* mCompileModeWidget;
 	QCheckBox* mLightEnabledWidget;
-	QComboBox* mLightQualityWidget;
 	QCheckBox* mLinkEnabledWidget;
 	QCheckBox* mRunEnabledWidget;
-	QLineEdit* mRunOptionsWidget;
 	QCheckBox* mIgnoreErrorsWidget;
+	QCheckBox* mExport2BinOverwriteWidget;
+
+	QComboBox* mCompileModeWidget;
+	QComboBox* mLightQualityWidget;
+
+	QLineEdit* mRunOptionsWidget;
+	QLineEdit* mExport2BinTargetDirWidget;
 
 	mlBuildThread* mBuildThread;
+
 	mlConvertThread* mConvertThread;
 
 	QDockWidget* mExport2BinGUIWidget;
-	QCheckBox* mExport2BinOverwriteWidget;
-	QLineEdit* mExport2BinTargetDirWidget;
 
-	bool mTreyarchTheme;
 	QString mBuildLanguage;
-
-	QStringList mShippedMapList;
-	QTimer mTimer;
-
-	quint64 mFileId;
 	QString mTitle;
 	QString mDescription;
 	QString mThumbnail;
 	QString mWorkshopFolder;
 	QString mFolderName;
 	QString mType;
-	QStringList mTags;
-
 	QString mGamePath;
 	QString mToolsPath;
 
+	QStringList mShippedMapList;
+	QStringList mTags;
 	QStringList mRunDvars;
+
+	QTimer mTimer;
 };
 
 class Export2BinGroupBox : public QGroupBox
