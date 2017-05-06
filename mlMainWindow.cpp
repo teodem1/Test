@@ -352,7 +352,8 @@ mlMainWindow::mlMainWindow()
 
 	connect(&mTimer, SIGNAL(timeout()), this, SLOT(SteamUpdate()));
 	mTimer.start(1000);
-
+	SyntaxTimer.setSingleShot(true);
+	connect(&SyntaxTimer,SIGNAL(timeout()),this,SLOT(UpdateSyntax()));
 	PopulateFileList();
 }
 
@@ -1609,7 +1610,9 @@ void mlMainWindow::InitZoneEditor()
 	Widget->setLayout(GridLayout);
 
 	ZoneSave->setText("Save");
+
 	connect(ZoneSave, SIGNAL(clicked()), this, SLOT(OnSaveZone()));
+	connect(mZoneTextEdit, SIGNAL(textChanged()),this,SLOT(OnTextChanged()));
 
 	QFile ZoneFile(mZonePath);
 	if(!ZoneFile.open(QIODevice::ReadOnly))
@@ -1619,6 +1622,7 @@ void mlMainWindow::InitZoneEditor()
 	while(!Read.atEnd()) {
 		mZoneTextEdit->appendPlainText(Read.readLine());        
 	}
+	 
 	ZoneFile.close();
 
 	GridLayout->addWidget(mZoneTextEdit,0,0);
@@ -1644,6 +1648,17 @@ void mlMainWindow::OnSaveZone()
 		QMessageBox::warning(this,"Failed To Save Zone!","Failed To Save!: "+ZoneFile.errorString(),QMessageBox::Ok);
 	}
 }
+
+void mlMainWindow::OnTextChanged()
+{
+	SyntaxTimer.start(500);
+}
+
+void mlMainWindow::UpdateSyntax()
+{
+	Syntax* highlighter = new Syntax(mZoneTextEdit->document());
+}
+
 
 Export2BinGroupBox::Export2BinGroupBox(QWidget* parent, mlMainWindow* parent_window) : QGroupBox(parent), parentWindow(parent_window)
 {
@@ -1690,4 +1705,74 @@ void Export2BinGroupBox::dropEvent(QDropEvent* event)
 void Export2BinGroupBox::dragLeaveEvent(QDragLeaveEvent* event)
 {
 	event->accept();
+}
+
+Syntax::Syntax(QTextDocument *parent) : QSyntaxHighlighter(parent)
+{
+	SyntaxRule CurrentRule;
+
+	//SyntaxFormat.setForeground("#63a058");
+	QStringList Patterns;
+	Patterns << "col_map" << "gfx_map" << "fx" << "sound" << "scriptparsetree" << "rawfile" << "scriptbundle" << "xcam"; //I Can't Find Docs On All, Would Be Nice To Get The Rest :).
+
+	foreach (const QString &pattern, Patterns) {
+		CurrentRule.RegExPattern = QRegExp(pattern);
+		CurrentRule.CharFormat = SyntaxFormat;
+		Rules.append(CurrentRule);
+	}
+	classFormat.setFontWeight(QFont::Bold);
+	classFormat.setForeground(Qt::darkMagenta);
+	CurrentRule.RegExPattern = QRegExp("\\bQ[A-Za-z]+\\b");
+	CurrentRule.CharFormat = classFormat;
+	Rules.append(CurrentRule);
+
+	quotationFormat.setForeground(Qt::darkGreen);
+	CurrentRule.RegExPattern = QRegExp("\".*\"");
+	CurrentRule.CharFormat = quotationFormat;
+	Rules.append(CurrentRule);
+
+	functionFormat.setFontItalic(true);
+	functionFormat.setForeground(Qt::blue);
+	CurrentRule.RegExPattern = QRegExp("\\b[A-Za-z0-9_]+(?=\\()");
+	CurrentRule.CharFormat = functionFormat;
+	Rules.append(CurrentRule);
+	singleLineCommentFormat.setForeground(Qt::red);
+	CurrentRule.RegExPattern = QRegExp("//[^\n]*");
+	CurrentRule.CharFormat = singleLineCommentFormat;
+	Rules.append(CurrentRule);
+
+	multiLineCommentFormat.setForeground(Qt::red);
+
+	commentStartExpression = QRegExp("/\\*");
+	commentEndExpression = QRegExp("\\*/");
+}
+
+void Syntax::highlightBlock(const QString &text)
+{
+	foreach (const SyntaxRule &rule, Rules) {
+		QRegExp expression(rule.RegExPattern);
+		int index = expression.indexIn(text);
+		while (index >= 0) {
+			int length = expression.matchedLength();	
+			setFormat(index, length, rule.CharFormat);
+			index = expression.indexIn(text, index + length);
+		}
+	}
+	setCurrentBlockState(0);
+	int startIndex = 0;
+	if (previousBlockState() != 1)
+		startIndex = commentStartExpression.indexIn(text);
+	while (startIndex >= 0) {
+		int endIndex = commentEndExpression.indexIn(text, startIndex);
+		int commentLength;
+		if (endIndex == -1) {
+			setCurrentBlockState(1);
+			commentLength = text.length() - startIndex;
+		} else {
+			commentLength = endIndex - startIndex
+				+ commentEndExpression.matchedLength();
+		}
+		setFormat(startIndex, commentLength, multiLineCommentFormat);
+		startIndex = commentStartExpression.indexIn(text, startIndex + commentLength);
+	}
 }

@@ -121,6 +121,8 @@ protected slots:
 	void OnConvertButton();
 	void OpenZoneEditor();
 	void OnSaveZone();
+	void OnTextChanged();
+	void UpdateSyntax();
 
 protected:
 	void closeEvent(QCloseEvent* Event);
@@ -200,6 +202,7 @@ protected:
 	QStringList mRunDvars;
 
 	QTimer mTimer;
+	QTimer SyntaxTimer;
 };
 
 class Export2BinGroupBox : public QGroupBox
@@ -214,4 +217,33 @@ protected:
 
 public:
 	Export2BinGroupBox(QWidget *parent, mlMainWindow* parent_window);
+};
+
+class Syntax : public QSyntaxHighlighter
+{
+    Q_OBJECT
+
+public:
+    Syntax(QTextDocument *parent = 0);
+
+protected:
+    void highlightBlock(const QString &text) override;
+
+private:
+    struct SyntaxRule
+    {
+        QRegExp RegExPattern;
+        QTextCharFormat CharFormat;
+    };
+    QVector<SyntaxRule> Rules;
+
+    QRegExp commentStartExpression;
+    QRegExp commentEndExpression;
+
+    QTextCharFormat SyntaxFormat;
+    QTextCharFormat classFormat;
+    QTextCharFormat singleLineCommentFormat;
+    QTextCharFormat multiLineCommentFormat;
+    QTextCharFormat quotationFormat;
+    QTextCharFormat functionFormat;
 };
