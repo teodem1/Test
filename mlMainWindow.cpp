@@ -243,6 +243,7 @@ mlMainWindow::mlMainWindow()
 	mBuildThread = NULL;
 	mBuildLanguage = Settings.value("BuildLanguage", "english").toString();
 	mTreyarchTheme = Settings.value("UseDarkTheme", false).toBool();
+	mUseBuiltInEditor= Settings.value("InBuiltEditor",false).toBool();
 
 	// Qt prefers '/' over '\\'
 	mGamePath = QDir::fromNativeSeparators(getenv("TA_GAME_PATH"));
@@ -1711,38 +1712,37 @@ Syntax::Syntax(QTextDocument *parent) : QSyntaxHighlighter(parent)
 {
 	SyntaxRule CurrentRule;
 
-	//SyntaxFormat.setForeground("#63a058");
+	KeyWordFormat.setForeground(QColor("#63a058"));
 	QStringList Patterns;
-	Patterns << "col_map" << "gfx_map" << "fx" << "sound" << "scriptparsetree" << "rawfile" << "scriptbundle" << "xcam"; //I Can't Find Docs On All, Would Be Nice To Get The Rest :).
+	Patterns << "scriptparsetree" << "rawfile" << "scriptbundle" << "xmodel" << "actor"; //I Can't Find Docs On All, Would Be Nice To Get The Rest :).
 
-	foreach (const QString &pattern, Patterns) {
-		CurrentRule.RegExPattern = QRegExp(pattern);
-		CurrentRule.CharFormat = SyntaxFormat;
+	foreach (const QString &Pattern, Patterns) {
+		CurrentRule.RegExPattern = QRegExp(Pattern);
+		CurrentRule.CharFormat = KeyWordFormat;
 		Rules.append(CurrentRule);
 	}
-	classFormat.setFontWeight(QFont::Bold);
-	classFormat.setForeground(Qt::darkMagenta);
-	CurrentRule.RegExPattern = QRegExp("\\bQ[A-Za-z]+\\b");
-	CurrentRule.CharFormat = classFormat;
+
+	IncludeFormat.setForeground(QColor("#fc8eac"));
+	CurrentRule.RegExPattern = QRegExp("#[^\n]*"); //Start With #, Continue To New Line.
+	CurrentRule.CharFormat = IncludeFormat;
 	Rules.append(CurrentRule);
 
-	quotationFormat.setForeground(Qt::darkGreen);
-	CurrentRule.RegExPattern = QRegExp("\".*\"");
-	CurrentRule.CharFormat = quotationFormat;
+	QuoteFormat.setForeground(QColor("#6c6999"));
+	CurrentRule.RegExPattern = QRegExp("\".*\""); //Start With ", Continue To Next ".
+	CurrentRule.CharFormat = QuoteFormat;
 	Rules.append(CurrentRule);
 
-	functionFormat.setFontItalic(true);
-	functionFormat.setForeground(Qt::blue);
-	CurrentRule.RegExPattern = QRegExp("\\b[A-Za-z0-9_]+(?=\\()");
-	CurrentRule.CharFormat = functionFormat;
+	SingleLineCommentFormat.setForeground(QColor("#c0e4ff"));
+	CurrentRule.RegExPattern = QRegExp("//[^\n]*"); //Start With //, Continue To New Line.
+	CurrentRule.CharFormat = SingleLineCommentFormat;
 	Rules.append(CurrentRule);
-	singleLineCommentFormat.setForeground(Qt::red);
-	CurrentRule.RegExPattern = QRegExp("//[^\n]*");
-	CurrentRule.CharFormat = singleLineCommentFormat;
+	
+	PreProcessor.setForeground(QColor("#a09c85"));
+	CurrentRule.RegExPattern = QRegExp(">[^\n]*");
+	CurrentRule.CharFormat = PreProcessor;
 	Rules.append(CurrentRule);
 
-	multiLineCommentFormat.setForeground(Qt::red);
-
+	MultiLineCommentFormat.setForeground(QColor("#c0e4ff"));
 	commentStartExpression = QRegExp("/\\*");
 	commentEndExpression = QRegExp("\\*/");
 }
@@ -1772,7 +1772,7 @@ void Syntax::highlightBlock(const QString &text)
 			commentLength = endIndex - startIndex
 				+ commentEndExpression.matchedLength();
 		}
-		setFormat(startIndex, commentLength, multiLineCommentFormat);
+		setFormat(startIndex, commentLength, MultiLineCommentFormat);
 		startIndex = commentStartExpression.indexIn(text, startIndex + commentLength);
 	}
 }

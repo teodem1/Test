@@ -240,10 +240,10 @@ private:
     QRegExp commentStartExpression;
     QRegExp commentEndExpression;
 
-    QTextCharFormat SyntaxFormat;
-    QTextCharFormat classFormat;
-    QTextCharFormat singleLineCommentFormat;
-    QTextCharFormat multiLineCommentFormat;
-    QTextCharFormat quotationFormat;
-    QTextCharFormat functionFormat;
+    QTextCharFormat KeyWordFormat;
+	QTextCharFormat QuoteFormat;
+    QTextCharFormat SingleLineCommentFormat;
+    QTextCharFormat MultiLineCommentFormat;
+	QTextCharFormat IncludeFormat;
+	QTextCharFormat PreProcessor;
 };
