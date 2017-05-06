@@ -198,7 +198,6 @@ protected:
 	QString mToolsPath;
 	QString mZonePath;
 
-	QStringList mShippedMapList;
 	QStringList mTags;
 	QStringList mRunDvars;
 

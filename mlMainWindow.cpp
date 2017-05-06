@@ -26,6 +26,8 @@ const int AppId = 311210;
 
 const char* gLanguages[] = { "english", "french", "italian", "spanish", "german", "portuguese", "russian", "polish", "japanese", "traditionalchinese", "simplifiedchinese", "englisharabic" };
 const char* gTags[] = { "Animation", "Audio", "Character", "Map", "Mod", "Mode", "Model", "Multiplayer", "Scorestreak", "Skin", "Specialist", "Texture", "UI", "Vehicle", "Visual Effect", "Weapon", "WIP", "Zombies" };
+QStringList mShippedMapList;
+
 dvar_s gDvars[] = {
 	{"ai_disableSpawn", "Disable AI from spawning", DVAR_VALUE_BOOL},
 	{"developer", "Run developer mode", DVAR_VALUE_INT, 0, 2},
@@ -35,7 +37,8 @@ dvar_s gDvars[] = {
 	{"connect", "Connect to a specific server", DVAR_VALUE_STRING, NULL, NULL, true},
 	{"set_gametype", "Set a gametype to load with map", DVAR_VALUE_STRING, NULL, NULL, true},
 	{"splitscreen", "Enable splitscreen", DVAR_VALUE_BOOL},
-	{"splitscreen_playerCount", "Allocate the number of instances for splitscreen", DVAR_VALUE_INT, 0, 2}
+	{"splitscreen_playerCount", "Allocate the number of instances for splitscreen", DVAR_VALUE_INT, 0, 2},
+	{"devmap","Launch to this map using devmap",DVAR_VALUE_COMBO,0,0,true},
 };
 enum mlItemType
 {
@@ -439,6 +442,8 @@ void mlMainWindow::CreateToolBar()
 	ToolBar->addAction(mActionFileAssetEditor);
 	ToolBar->addAction(mActionFileLevelEditor);
 	ToolBar->addAction(mActionFileExport2Bin);
+
+	ToolBar->setMovable(false);
 
 	addToolBar(Qt::TopToolBarArea, ToolBar);
 }
@@ -1263,6 +1268,9 @@ void mlMainWindow::OnEditDvars()
 		case DVAR_VALUE_STRING:
 			dvarValue = Dvar::setDvarSetting(dvar, (QLineEdit*)widget);
 			break;
+		case DVAR_VALUE_COMBO:
+			dvarValue = Dvar::setDvarSetting(dvar,(QComboBox*)widget);
+			break;
 		}
 
 		if(!dvarValue.toLatin1().isEmpty())
@@ -1271,11 +1279,14 @@ void mlMainWindow::OnEditDvars()
 				mRunDvars << "+set" << dvarName;
 			else			// hack for cmds
 				mRunDvars << QString("+%1").arg(dvarName);
+
 			mRunDvars << dvarValue;
 		}
 		size++;
 		++it;
 	}
+
+
 }
 
 void mlMainWindow::UpdateWorkshopItem()
@@ -1629,9 +1640,9 @@ void mlMainWindow::InitZoneEditor()
 	 
 	ZoneFile->close();
 
-	GridLayout->addWidget(mZoneTextEdit,0,0);
+	GridLayout->addWidget(mZoneTextEdit,0,0,1,2);
 	GridLayout->addWidget(ZoneSave,1,0);
-	GridLayout->addWidget(ZoneCancel,2,0);
+	GridLayout->addWidget(ZoneCancel,1,1);
 
 	mZoneEditorGUIWidget = Dock;
 }
@@ -1672,7 +1683,6 @@ void mlMainWindow::UpdateSyntax()
 {
 	Syntax* highlighter = new Syntax(mZoneTextEdit->document());
 }
-
 
 Export2BinGroupBox::Export2BinGroupBox(QWidget* parent, mlMainWindow* parent_window) : QGroupBox(parent), parentWindow(parent_window)
 {
