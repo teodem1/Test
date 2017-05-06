@@ -4,7 +4,8 @@ enum DvarType
 {
 	DVAR_VALUE_BOOL,
 	DVAR_VALUE_INT,
-	DVAR_VALUE_STRING
+	DVAR_VALUE_STRING,
+	DVAR_VALUE_COMBO
 };
 
 struct dvar_s
@@ -21,6 +22,7 @@ class Dvar
 {
 private:
 	dvar_s dvar;
+	
 
 public:
 	Dvar();
@@ -30,6 +32,7 @@ public:
 	static QString setDvarSetting(dvar_s, QCheckBox*);
 	static QString setDvarSetting(dvar_s, QSpinBox*);
 	static QString setDvarSetting(dvar_s, QLineEdit*);
+	static QString setDvarSetting(dvar_s, QComboBox*);
 
 	static dvar_s findDvar(QString, QTreeWidget*, dvar_s*, int);
 };
