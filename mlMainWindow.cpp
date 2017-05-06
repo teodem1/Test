@@ -1650,19 +1650,20 @@ void mlMainWindow::InitZoneEditor()
 void mlMainWindow::OnSaveZone()
 {
 	ZoneFile = new QFile(mZonePath);
-	ZoneFile->open(QIODevice::ReadWrite);
-	if(ZoneFile->isOpen())
+	if(ZoneFile->open(QIODevice::WriteOnly | QIODevice::Text))
 	{
 		QTextStream Out(ZoneFile);
-		Out << mZoneTextEdit->toPlainText();
-		ZoneFile->close();
-		mZoneEditorGUIWidget->close();
-		return;
+		Out << (mZoneTextEdit->toPlainText());
+		Out.flush();
+		mOutputWidget->appendPlainText(Out.readLine());
 	}
 	else
 	{
 		QMessageBox::warning(this,"Failed To Save Zone!","Failed To Save!: "+ZoneFile->errorString(),QMessageBox::Ok);
 	}
+
+	ZoneFile->close();
+	mZoneEditorGUIWidget->close();
 }
 
 void mlMainWindow::OnCancelZone()
