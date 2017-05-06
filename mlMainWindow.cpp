@@ -1602,6 +1602,7 @@ void mlMainWindow::InitZoneEditor()
 	QGridLayout* GridLayout = new QGridLayout();
 	mZoneTextEdit = new QPlainTextEdit();
 	QPushButton* ZoneSave = new QPushButton();
+	QPushButton* ZoneCancel = new QPushButton();
 
 	Dock->resize(QSize(460, 480));
 	Dock->setWindowTitle("Zone Editor");
@@ -1611,43 +1612,55 @@ void mlMainWindow::InitZoneEditor()
 	Widget->setLayout(GridLayout);
 
 	ZoneSave->setText("Save");
+	ZoneCancel->setText("Cancel");
 
 	connect(ZoneSave, SIGNAL(clicked()), this, SLOT(OnSaveZone()));
+	connect(ZoneCancel,SIGNAL(clicked()),this,SLOT(OnCancelZone()));
 	connect(mZoneTextEdit, SIGNAL(textChanged()),this,SLOT(OnTextChanged()));
 
-	QFile ZoneFile(mZonePath);
-	if(!ZoneFile.open(QIODevice::ReadOnly))
-		QMessageBox::information(this, "Error!", ZoneFile.errorString());
+	ZoneFile = new QFile(mZonePath);
+	if(!ZoneFile->open(QIODevice::ReadOnly))
+		QMessageBox::information(this, "Error!", ZoneFile->errorString());
 
-	QTextStream Read(&ZoneFile);
+	QTextStream Read(ZoneFile);
 	while(!Read.atEnd()) {
 		mZoneTextEdit->appendPlainText(Read.readLine());        
 	}
 	 
-	ZoneFile.close();
+	ZoneFile->close();
 
 	GridLayout->addWidget(mZoneTextEdit,0,0);
 	GridLayout->addWidget(ZoneSave,1,0);
+	GridLayout->addWidget(ZoneCancel,2,0);
 
 	mZoneEditorGUIWidget = Dock;
 }
 
 void mlMainWindow::OnSaveZone()
 {
-	QFile ZoneFile(mZonePath);
-	ZoneFile.open(QIODevice::ReadWrite);
-	if(ZoneFile.isOpen())
+	ZoneFile = new QFile(mZonePath);
+	ZoneFile->open(QIODevice::ReadWrite);
+	if(ZoneFile->isOpen())
 	{
-		QTextStream Out(&ZoneFile);
+		QTextStream Out(ZoneFile);
 		Out << mZoneTextEdit->toPlainText();
-		ZoneFile.close();
+		ZoneFile->close();
 		mZoneEditorGUIWidget->close();
 		return;
 	}
 	else
 	{
-		QMessageBox::warning(this,"Failed To Save Zone!","Failed To Save!: "+ZoneFile.errorString(),QMessageBox::Ok);
+		QMessageBox::warning(this,"Failed To Save Zone!","Failed To Save!: "+ZoneFile->errorString(),QMessageBox::Ok);
 	}
+}
+
+void mlMainWindow::OnCancelZone()
+{
+	if(ZoneFile->isOpen())
+		ZoneFile->close();
+
+	mZoneEditorGUIWidget->close();
+	return;
 }
 
 void mlMainWindow::OnTextChanged()

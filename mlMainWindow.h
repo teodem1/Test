@@ -123,6 +123,7 @@ protected slots:
 	void OnSaveZone();
 	void OnTextChanged();
 	void UpdateSyntax();
+	void OnCancelZone();
 
 protected:
 	void closeEvent(QCloseEvent* Event);
@@ -203,6 +204,8 @@ protected:
 
 	QTimer mTimer;
 	QTimer SyntaxTimer;
+
+	QFile* ZoneFile;
 };
 
 class Export2BinGroupBox : public QGroupBox
