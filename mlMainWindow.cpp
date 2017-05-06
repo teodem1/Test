@@ -27,16 +27,16 @@ const int AppId = 311210;
 const char* gLanguages[] = { "english", "french", "italian", "spanish", "german", "portuguese", "russian", "polish", "japanese", "traditionalchinese", "simplifiedchinese", "englisharabic" };
 const char* gTags[] = { "Animation", "Audio", "Character", "Map", "Mod", "Mode", "Model", "Multiplayer", "Scorestreak", "Skin", "Specialist", "Texture", "UI", "Vehicle", "Visual Effect", "Weapon", "WIP", "Zombies" };
 dvar_s gDvars[] = {
-					{"ai_disableSpawn", "Disable AI from spawning", DVAR_VALUE_BOOL},
-					{"developer", "Run developer mode", DVAR_VALUE_INT, 0, 2},
-					{"g_password", "Password for your server", DVAR_VALUE_STRING},
-					{"logfile", "Console log information written to current fs_game", DVAR_VALUE_INT, 0, 2},
-					{"scr_mod_enable_devblock", "Developer blocks are executed in mods ", DVAR_VALUE_BOOL},
-					{"connect", "Connect to a specific server", DVAR_VALUE_STRING, NULL, NULL, true},
-					{"set_gametype", "Set a gametype to load with map", DVAR_VALUE_STRING, NULL, NULL, true},
-					{"splitscreen", "Enable splitscreen", DVAR_VALUE_BOOL},
-					{"splitscreen_playerCount", "Allocate the number of instances for splitscreen", DVAR_VALUE_INT, 0, 2}
-				 };
+	{"ai_disableSpawn", "Disable AI from spawning", DVAR_VALUE_BOOL},
+	{"developer", "Run developer mode", DVAR_VALUE_INT, 0, 2},
+	{"g_password", "Password for your server", DVAR_VALUE_STRING},
+	{"logfile", "Console log information written to current fs_game", DVAR_VALUE_INT, 0, 2},
+	{"scr_mod_enable_devblock", "Developer blocks are executed in mods ", DVAR_VALUE_BOOL},
+	{"connect", "Connect to a specific server", DVAR_VALUE_STRING, NULL, NULL, true},
+	{"set_gametype", "Set a gametype to load with map", DVAR_VALUE_STRING, NULL, NULL, true},
+	{"splitscreen", "Enable splitscreen", DVAR_VALUE_BOOL},
+	{"splitscreen_playerCount", "Allocate the number of instances for splitscreen", DVAR_VALUE_INT, 0, 2}
+};
 enum mlItemType
 {
 	ML_ITEM_UNKNOWN,
@@ -254,7 +254,7 @@ mlMainWindow::mlMainWindow()
 
 	setWindowIcon(QIcon(":/resources/ModLauncher.png"));
 	setWindowTitle("Black Ops III Mod Tools Launcher");
-	
+
 	resize(1024, 768);
 
 	CreateActions();
@@ -463,7 +463,7 @@ void mlMainWindow::InitExport2BinGUI()
 
 	mExport2BinOverwriteWidget = new QCheckBox("&Overwrite Existing Files", widget);
 	gridLayout->addWidget(mExport2BinOverwriteWidget, 1, 0);
-	
+
 	QSettings Settings;
 	mExport2BinOverwriteWidget->setChecked(Settings.value("Export2Bin_OverwriteFiles", true).toBool());
 
@@ -524,17 +524,17 @@ void mlMainWindow::StartBuildThread(const QList<QPair<QString, QStringList>>& Co
 {
 	if(mBuildThread == NULL)
 	{
-	mBuildButton->setText("Cancel");
-	mOutputWidget->clear();
+		mBuildButton->setText("Cancel");
+		mOutputWidget->clear();
 
-	mBuildThread = new mlBuildThread(Commands, mIgnoreErrorsWidget->isChecked());
-	connect(mBuildThread, SIGNAL(OutputReady(QString)), this, SLOT(BuildOutputReady(QString)));
-	connect(mBuildThread, SIGNAL(finished()), this, SLOT(BuildFinished()));
-	mBuildThread->start();
+		mBuildThread = new mlBuildThread(Commands, mIgnoreErrorsWidget->isChecked());
+		connect(mBuildThread, SIGNAL(OutputReady(QString)), this, SLOT(BuildOutputReady(QString)));
+		connect(mBuildThread, SIGNAL(finished()), this, SLOT(BuildFinished()));
+		mBuildThread->start();
 	}
 	else
 	{
-		QMessageBox::information(this,"Build In Progress","There is already a build in progress, please wait.",QMessageBox::Button::Ok);
+		QMessageBox::information(this,"Task In Progress","There is already a something running. Please wait.",QMessageBox::Button::Ok);
 	}
 }
 
@@ -1143,6 +1143,11 @@ void mlMainWindow::OnEditOptions()
 	Checkbox->setChecked(Settings.value("UseDarkTheme", false).toBool());
 	Layout->addWidget(Checkbox);
 
+	QCheckBox* InBuiltEditor = new QCheckBox("Use Inbult Zone Editor");
+	InBuiltEditor->setToolTip("Toggle between using default zone file editor, or the inbult one. (BETA)");
+	InBuiltEditor->setChecked(Settings.value("InBuiltEditor",false).toBool());
+	Layout->addWidget(InBuiltEditor);
+
 	QHBoxLayout* LanguageLayout = new QHBoxLayout();
 	LanguageLayout->addWidget(new QLabel("Build Language:"));
 
@@ -1173,10 +1178,11 @@ void mlMainWindow::OnEditOptions()
 
 	mBuildLanguage = LanguageCombo->currentText();
 	mTreyarchTheme = Checkbox->isChecked();
+	mUseBuiltInEditor = InBuiltEditor->isChecked();
 
 	Settings.setValue("BuildLanguage", mBuildLanguage);
 	Settings.setValue("UseDarkTheme", mTreyarchTheme);
-
+	Settings.setValue("InBuiltEditor",mUseBuiltInEditor);
 	UpdateTheme();
 }
 
@@ -1322,26 +1328,26 @@ void mlMainWindow::UpdateWorkshopItem()
 
 	SteamUGC()->SetItemTags(UpdateHandle, &Tags);
 
-	 SteamAPICall_t SteamAPICall = SteamUGC()->SubmitItemUpdate(UpdateHandle, "");
-	 mSteamCallResultUpdateItem.Set(SteamAPICall, this, &mlMainWindow::OnUpdateItemResult);
+	SteamAPICall_t SteamAPICall = SteamUGC()->SubmitItemUpdate(UpdateHandle, "");
+	mSteamCallResultUpdateItem.Set(SteamAPICall, this, &mlMainWindow::OnUpdateItemResult);
 
-	 QProgressDialog Dialog(this);
-	 Dialog.setLabelText(QString("Uploading workshop item '%1'...").arg(QString::number(mFileId)));
-	 Dialog.setCancelButton(NULL);
-	 Dialog.setWindowModality(Qt::WindowModal);
-	 Dialog.show();
+	QProgressDialog Dialog(this);
+	Dialog.setLabelText(QString("Uploading workshop item '%1'...").arg(QString::number(mFileId)));
+	Dialog.setCancelButton(NULL);
+	Dialog.setWindowModality(Qt::WindowModal);
+	Dialog.show();
 
-	 for (;;)
-	 {
-		 uint64 Processed, Total;
-		 if (SteamUGC()->GetItemUpdateProgress(SteamAPICall, &Processed, &Total) == k_EItemUpdateStatusInvalid)
-			 break;
+	for (;;)
+	{
+		uint64 Processed, Total;
+		if (SteamUGC()->GetItemUpdateProgress(SteamAPICall, &Processed, &Total) == k_EItemUpdateStatusInvalid)
+			break;
 
-		 Dialog.setMaximum(Total);
-		 Dialog.setValue(Processed);
-		 QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
-		 Sleep(100);
-	 }
+		Dialog.setMaximum(Total);
+		Dialog.setValue(Processed);
+		QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+		Sleep(100);
+	}
 }
 
 void mlMainWindow::OnCreateItemResult(CreateItemResult_t* CreateItemResult, bool IOFailure)
@@ -1391,19 +1397,27 @@ void mlMainWindow::OnOpenZoneFile()
 	QList<QTreeWidgetItem*> ItemList = mFileListWidget->selectedItems();
 	if (ItemList.isEmpty())
 		return;
-	
+
 	QTreeWidgetItem* Item = ItemList[0];
 
 	if (Item->data(0, Qt::UserRole).toInt() == ML_ITEM_MAP)
 	{
 		QString MapName = Item->text(0);
-		ShellExecute(NULL, "open", QString("\"%1/usermaps/%2/zone_source/%3.zone\"").arg(mGamePath, MapName, MapName).toLatin1().constData(), "", NULL, SW_SHOWDEFAULT);
+		mZonePath = QString("%1/usermaps/%2/zone_source/%3.zone").arg(mGamePath, MapName, MapName);
+		if(mUseBuiltInEditor)
+			OpenZoneEditor();
+		else
+			ShellExecute(NULL, "open", mZonePath.toLatin1().constData(), "", NULL, SW_SHOWDEFAULT);
 	}
 	else
 	{
 		QString ModName = Item->parent()->text(0);
 		QString ZoneName = Item->text(0);
-		ShellExecute(NULL, "open", (QString("\"%1/mods/%2/zone_source/%3.zone\"").arg(mGamePath, ModName, ZoneName)).toLatin1().constData(), "", NULL, SW_SHOWDEFAULT);
+		mZonePath = QString("%1/mods/%2/zone_source/%3.zone").arg(mGamePath, ModName, ZoneName);
+		if(mUseBuiltInEditor)
+			OpenZoneEditor();
+		else
+			ShellExecute(NULL, "open", mZonePath.toLatin1().constData(), "", NULL, SW_SHOWDEFAULT);
 	}
 }
 
@@ -1560,8 +1574,6 @@ void mlMainWindow::BuildOutputReady(QString Output)
 
 void mlMainWindow::BuildFinished()
 {
-	mConvertButton->setDisabled(false);
-
 	mBuildButton->setText("Build");
 	mBuildThread->deleteLater();
 	mBuildThread = NULL;
@@ -1569,12 +1581,68 @@ void mlMainWindow::BuildFinished()
 
 void mlMainWindow::OnConvertButton()
 {
-	mConvertButton->setDisabled(true);
-
 	QList<QPair<QString, QStringList>> Commands;
 	Commands.append(QPair<QString, QStringList>(QString("%1/bin/linker_modtools.exe").arg(mToolsPath), QStringList() << "-language" << "english" << "-convertall" << "-verbose"));
 
 	StartBuildThread(Commands);
+}
+
+void mlMainWindow::OpenZoneEditor()
+{
+	InitZoneEditor();
+	mZoneEditorGUIWidget->show();
+}
+
+void mlMainWindow::InitZoneEditor()
+{
+	QDockWidget *Dock = new QDockWidget(this,NULL);
+	QWidget* Widget = new QWidget(Dock);
+	QGridLayout* GridLayout = new QGridLayout();
+	mZoneTextEdit = new QPlainTextEdit();
+	QPushButton* ZoneSave = new QPushButton();
+
+	Dock->resize(QSize(460, 480));
+	Dock->setWindowTitle("Zone Editor");
+	Dock->setFloating(true);
+	Dock->setWidget(Widget);
+
+	Widget->setLayout(GridLayout);
+
+	ZoneSave->setText("Save");
+	connect(ZoneSave, SIGNAL(clicked()), this, SLOT(OnSaveZone()));
+
+	QFile ZoneFile(mZonePath);
+	if(!ZoneFile.open(QIODevice::ReadOnly))
+		QMessageBox::information(this, "Error!", ZoneFile.errorString());
+
+	QTextStream Read(&ZoneFile);
+	while(!Read.atEnd()) {
+		mZoneTextEdit->appendPlainText(Read.readLine());        
+	}
+	ZoneFile.close();
+
+	GridLayout->addWidget(mZoneTextEdit,0,0);
+	GridLayout->addWidget(ZoneSave,1,0);
+
+	mZoneEditorGUIWidget = Dock;
+}
+
+void mlMainWindow::OnSaveZone()
+{
+	QFile ZoneFile(mZonePath);
+	ZoneFile.open(QIODevice::ReadWrite);
+	if(ZoneFile.isOpen())
+	{
+		QTextStream Out(&ZoneFile);
+		Out << mZoneTextEdit->toPlainText();
+		ZoneFile.close();
+		mZoneEditorGUIWidget->close();
+		return;
+	}
+	else
+	{
+		QMessageBox::warning(this,"Failed To Save Zone!","Failed To Save!: "+ZoneFile.errorString(),QMessageBox::Ok);
+	}
 }
 
 Export2BinGroupBox::Export2BinGroupBox(QWidget* parent, mlMainWindow* parent_window) : QGroupBox(parent), parentWindow(parent_window)
@@ -1606,7 +1674,7 @@ void Export2BinGroupBox::dropEvent(QDropEvent* event)
 		{
 			pathList.append(urlList.at(i).toLocalFile());
 		}
-		
+
 		QProcess* Process = new QProcess();
 		connect(Process, SIGNAL(finished(int)), Process, SLOT(deleteLater()));
 
@@ -1614,7 +1682,7 @@ void Export2BinGroupBox::dropEvent(QDropEvent* event)
 
 		QString outputDir = parentWindow->mExport2BinTargetDirWidget->text();
 		parentWindow->StartConvertThread(pathList, outputDir, allowOverwrite);
-		
+
 		event->acceptProposedAction();
 	}
 }

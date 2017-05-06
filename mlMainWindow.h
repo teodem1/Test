@@ -117,7 +117,10 @@ protected slots:
 	void BuildFinished();
 	void ContextMenuRequested();
 	void SteamUpdate();
+
 	void OnConvertButton();
+	void OpenZoneEditor();
+	void OnSaveZone();
 
 protected:
 	void closeEvent(QCloseEvent* Event);
@@ -135,8 +138,11 @@ protected:
 	void CreateToolBar();
 
 	void InitExport2BinGUI();
+	void InitZoneEditor();
 
 	bool mTreyarchTheme;
+	bool mUseBuiltInEditor;
+	
 	quint64 mFileId;
 
 	QAction* mActionFileNew;
@@ -152,6 +158,7 @@ protected:
 	QTreeWidget* mFileListWidget;
 
 	QPlainTextEdit* mOutputWidget;
+	QPlainTextEdit* mZoneTextEdit;
 
 	QPushButton* mBuildButton;
 	QPushButton* mDvarsButton;
@@ -175,6 +182,7 @@ protected:
 	mlConvertThread* mConvertThread;
 
 	QDockWidget* mExport2BinGUIWidget;
+	QDockWidget* mZoneEditorGUIWidget;
 
 	QString mBuildLanguage;
 	QString mTitle;
@@ -185,6 +193,7 @@ protected:
 	QString mType;
 	QString mGamePath;
 	QString mToolsPath;
+	QString mZonePath;
 
 	QStringList mShippedMapList;
 	QStringList mTags;
