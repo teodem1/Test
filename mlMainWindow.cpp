@@ -250,10 +250,10 @@ mlMainWindow::mlMainWindow()
 	// Qt prefers '/' over '\\'
 	// Deemed Broken by Johnatohn - 
 	/*
-		mGamePath = QDir::fromNativeSeparators(getenv("TA_GAME_PATH"));
-		mGamePath.chop(1);
-		mToolsPath = QDir::fromNativeSeparators(getenv("TA_TOOLS_PATH"));
-		mToolsPath.chop(1);
+	mGamePath = QDir::fromNativeSeparators(getenv("TA_GAME_PATH"));
+	mGamePath.chop(1);
+	mToolsPath = QDir::fromNativeSeparators(getenv("TA_TOOLS_PATH"));
+	mToolsPath.chop(1);
 	*/
 	mGamePath = QString(getenv("TA_GAME_PATH")).replace('\\', '/');
 	mToolsPath = QString(getenv("TA_TOOLS_PATH")).replace('\\', '/');
@@ -391,7 +391,7 @@ void mlMainWindow::CreateActions()
 	mActionFileExport2Bin->setShortcut(QKeySequence("Ctrl+E"));
 	connect(mActionFileExport2Bin, SIGNAL(triggered()), this, SLOT(OnFileExport2Bin()));
 
-	mActionCreateGdt = new QAction(QIcon(":/resources/Export2Bin.png"), "&GDT Creator", this);
+	mActionCreateGdt = new QAction(QIcon(":/resources/GDTCreator.png"), "&GDT Creator", this);
 	mActionCreateGdt->setShortcut(QKeySequence("Ctrl+G"));
 	connect(mActionCreateGdt, SIGNAL(triggered()), this, SLOT(OnFileGDTCreator()));
 
@@ -513,6 +513,33 @@ void mlMainWindow::InitExport2BinGUI()
 	mExport2BinGUIWidget = dock;
 }
 
+void mlMainWindow::InitGDTCreator()
+{
+	QDockWidget *dock = new QDockWidget(this, NULL);
+	dock->setWindowTitle("Quick GDT Creator");
+	dock->setFloating(true);
+
+	QWidget* widget = new QWidget(dock);
+	QGridLayout* gridLayout = new QGridLayout();
+	widget->setLayout(gridLayout);
+	dock->setWidget(widget);
+
+	GDTCreatorGroupBox* groupBox = new GDTCreatorGroupBox(dock, this);
+	gridLayout->addWidget(groupBox, 0, 0);
+
+	QLabel* label = new QLabel("Drag Files Here", groupBox);
+	label->setAlignment(Qt::AlignCenter);
+	QVBoxLayout* groupBoxLayout = new QVBoxLayout(groupBox);
+	groupBoxLayout->addWidget(label);
+	groupBox->setLayout(groupBoxLayout);
+	 //Do things
+	groupBox->setAcceptDrops(true);
+
+	dock->resize(QSize(256, 256));
+
+	mGDTCreatorGUIWidget = dock;
+}
+
 void mlMainWindow::closeEvent(QCloseEvent* Event)
 {
 	QSettings Settings;
@@ -542,12 +569,12 @@ void mlMainWindow::UpdateDB()
 
 void mlMainWindow::StartBuildThread(const QList<QPair<QString, QStringList>>& Commands)
 {
-		mBuildButton->setText("Cancel");
+	mBuildButton->setText("Cancel");
 
-		mBuildThread = new mlBuildThread(Commands, mIgnoreErrorsWidget->isChecked());
-		connect(mBuildThread, SIGNAL(OutputReady(QString)), this, SLOT(BuildOutputReady(QString)));
-		connect(mBuildThread, SIGNAL(finished()), this, SLOT(BuildFinished()));
-		mBuildThread->start();
+	mBuildThread = new mlBuildThread(Commands, mIgnoreErrorsWidget->isChecked());
+	connect(mBuildThread, SIGNAL(OutputReady(QString)), this, SLOT(BuildOutputReady(QString)));
+	connect(mBuildThread, SIGNAL(finished()), this, SLOT(BuildFinished()));
+	mBuildThread->start();
 }
 
 void mlMainWindow::StartConvertThread(QStringList& pathList, QString& outputDir, bool allowOverwrite)
@@ -674,6 +701,17 @@ void mlMainWindow::OnFileExport2Bin()
 	}
 
 	mExport2BinGUIWidget->isVisible() ? mExport2BinGUIWidget->hide() : mExport2BinGUIWidget->show();
+}
+
+void mlMainWindow::OnFileGDTCreator()
+{
+	if (mGDTCreatorGUIWidget == NULL)
+	{
+		InitGDTCreator();
+		mGDTCreatorGUIWidget->hide();
+	}
+
+	mGDTCreatorGUIWidget->isVisible() ? mGDTCreatorGUIWidget->hide() : mGDTCreatorGUIWidget->show();
 }
 
 void mlMainWindow::OnFileNew()
@@ -865,7 +903,7 @@ void mlMainWindow::OnEditBuild()
 					Args << "-navmesh" << "-navvolume";
 
 				Args << "-loadFrom" << QString("%1\\map_source\\%2\\%3.map").arg(mGamePath, MapName.left(2), MapName);
-                Args << QString("%1\\share\\raw\\maps\\%2\\%3.d3dbsp").arg(mGamePath, MapName.left(2), MapName);
+				Args << QString("%1\\share\\raw\\maps\\%2\\%3.d3dbsp").arg(mGamePath, MapName.left(2), MapName);
 
 				Commands.append(QPair<QString, QStringList>(QString("%1\\bin\\cod2map64.exe").arg(mToolsPath), Args));
 			}
@@ -1155,7 +1193,7 @@ void mlMainWindow::OnEditOptions()
 	Checkbox->setChecked(Settings.value("UseDarkTheme", false).toBool());
 	Layout->addWidget(Checkbox);
 
-	QCheckBox* InBuiltEditor = new QCheckBox("Use Inbult Zone Editor");
+	QCheckBox* InBuiltEditor = new QCheckBox("Use Built-In Zone Editor");
 	InBuiltEditor->setToolTip("Toggle between using default zone file editor, or the inbult one. (BETA)");
 	InBuiltEditor->setChecked(Settings.value("InBuiltEditor",false).toBool());
 	Layout->addWidget(InBuiltEditor);
@@ -1607,8 +1645,13 @@ void mlMainWindow::OnConvertButton()
 
 void mlMainWindow::OpenZoneEditor()
 {
-	InitZoneEditor();
-	mZoneEditorGUIWidget->show();
+	if (mZoneEditorGUIWidget == NULL)
+	{
+		InitZoneEditor();
+		mZoneEditorGUIWidget->hide();
+	}
+
+	mZoneEditorGUIWidget->isVisible() ? mZoneEditorGUIWidget->hide() : mZoneEditorGUIWidget->show();
 }
 
 void mlMainWindow::InitZoneEditor()
@@ -1690,6 +1733,53 @@ void mlMainWindow::UpdateSyntax()
 	Syntax* highlighter = new Syntax(mZoneTextEdit->document());
 }
 
+
+GDTCreatorGroupBox::GDTCreatorGroupBox(QWidget* parent, mlMainWindow* parent_window) : QGroupBox(parent), parentWindow(parent_window)
+{
+	this->setAcceptDrops(true);
+}
+
+void GDTCreatorGroupBox::dragEnterEvent(QDragEnterEvent* event)
+{
+	event->acceptProposedAction();
+}
+
+void GDTCreatorGroupBox::dropEvent(QDropEvent* event)
+{
+	const QMimeData* mimeData = event->mimeData();
+
+	if (parentWindow == NULL)
+	{
+		return;
+	}
+
+	if (mimeData->hasUrls())
+	{
+		QStringList pathList;
+		QList<QUrl> urlList = mimeData->urls();
+
+		QDir working_dir(parentWindow->mToolsPath);
+		for (int i = 0; i < urlList.size(); i++)
+		{
+			pathList.append(urlList.at(i).toLocalFile());
+		}
+
+		QProcess* Process = new QProcess();
+		connect(Process, SIGNAL(finished(int)), Process, SLOT(deleteLater()));
+
+		bool allowOverwrite = this->parentWindow->mGDTCreateOverwriteWidget->isChecked();
+
+		QString outputDir = parentWindow->mGDTCreateTargetDir->text();
+		parentWindow->StartConvertThread(pathList, outputDir, allowOverwrite);
+
+		event->acceptProposedAction();
+	}
+}
+
+void GDTCreatorGroupBox::dragLeaveEvent(QDragLeaveEvent* event)
+{
+	event->accept();
+}
 
 Export2BinGroupBox::Export2BinGroupBox(QWidget* parent, mlMainWindow* parent_window) : QGroupBox(parent), parentWindow(parent_window)
 {

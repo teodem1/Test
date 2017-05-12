@@ -102,6 +102,7 @@ protected slots:
 	void OnFileAssetEditor();
 	void OnFileLevelEditor();
 	void OnFileExport2Bin();
+	void OnFileGDTCreator();
 	void OnEditBuild();
 	void OnEditPublish();
 	void OnEditOptions();
@@ -143,7 +144,7 @@ protected:
 
 	void InitExport2BinGUI();
 	void InitZoneEditor();
-	void InitCreatorGUIWidget();
+	void InitGDTCreator();
 
 	bool mTreyarchTheme;
 	bool mUseBuiltInEditor;
