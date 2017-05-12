@@ -108,6 +108,7 @@ protected slots:
 	void OnEditOptions();
 	void OnEditDvars();
 	void OnHelpAbout();
+	void OnSaveOutput();
 	void OnOpenZoneFile();
 	void OnOpenModRootFolder();
 	void OnRunMapOrMod();
@@ -161,6 +162,7 @@ protected:
 	QAction* mActionEditOptions;
 	QAction* mActionHelpAbout;
 	QAction* mActionCreateGdt;
+	QAction* mActionSaveOutput;
 
 	QTreeWidget* mFileListWidget;
 

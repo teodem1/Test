@@ -366,6 +366,8 @@ mlMainWindow::mlMainWindow()
 	SyntaxTimer.setSingleShot(true);
 	connect(&SyntaxTimer,SIGNAL(timeout()),this,SLOT(UpdateSyntax()));
 	PopulateFileList();
+
+	mRunOptionsWidget->setPlaceholderText("Optional Run Args");
 }
 
 mlMainWindow::~mlMainWindow()
@@ -412,6 +414,10 @@ void mlMainWindow::CreateActions()
 	mActionHelpAbout = new QAction("&About...", this);
 	connect(mActionHelpAbout, SIGNAL(triggered()), this, SLOT(OnHelpAbout()));
 
+	mActionSaveOutput = new QAction("&Save Console Output",this);
+	mActionSaveOutput->setShortcut(QKeySequence("CTRL+S"));
+	connect(mActionSaveOutput,SIGNAL(triggered()),this,SLOT(OnSaveOutput()));
+
 }
 
 void mlMainWindow::CreateMenu()
@@ -424,6 +430,9 @@ void mlMainWindow::CreateMenu()
 	FileMenu->addAction(mActionFileAssetEditor);
 	FileMenu->addAction(mActionFileLevelEditor);
 	FileMenu->addAction(mActionFileExport2Bin);
+	FileMenu->addAction(mActionCreateGdt);
+	FileMenu->addSeparator();
+	FileMenu->addAction(mActionSaveOutput);
 	FileMenu->addSeparator();
 	FileMenu->addAction(mActionFileExit);
 	MenuBar->addAction(FileMenu->menuAction());
@@ -569,12 +578,19 @@ void mlMainWindow::UpdateDB()
 
 void mlMainWindow::StartBuildThread(const QList<QPair<QString, QStringList>>& Commands)
 {
+	if(mBuildThread == NULL)
+	{
 	mBuildButton->setText("Cancel");
 
 	mBuildThread = new mlBuildThread(Commands, mIgnoreErrorsWidget->isChecked());
 	connect(mBuildThread, SIGNAL(OutputReady(QString)), this, SLOT(BuildOutputReady(QString)));
 	connect(mBuildThread, SIGNAL(finished()), this, SLOT(BuildFinished()));
 	mBuildThread->start();
+	}
+	else
+	{
+		QMessageBox::warning(NULL,"Task In Progress","There Is Already A Task In Progress.\nPlease Wait Or Cancel It!",QMessageBox::Ok);
+	}
 }
 
 void mlMainWindow::StartConvertThread(QStringList& pathList, QString& outputDir, bool allowOverwrite)
@@ -659,6 +675,7 @@ void mlMainWindow::ContextMenuRequested()
 		Menu->addAction(mActionFileLevelEditor);
 
 	Menu->addAction("Edit Zone File", this, SLOT(OnOpenZoneFile()));
+
 	Menu->addAction(QString("Open %1 Folder").arg(ItemType), this, SLOT(OnOpenModRootFolder()));
 
 	Menu->addSeparator();
@@ -1448,6 +1465,24 @@ void mlMainWindow::OnHelpAbout()
 	QMessageBox::about(this, "About Modtools Launcher", "Treyarch Modtools Launcher\nCopyright 2016 Treyarch");
 }
 
+void mlMainWindow::OnSaveOutput()
+{
+	QFile* Output = new QFile("Console Output.txt");
+	if(Output->open(QIODevice::WriteOnly | QIODevice::Text))
+	{
+		QTextStream Out(Output);
+		Out << (mOutputWidget->toPlainText());
+		Out.flush();
+		QMessageBox::information(this,"Saved Console Output","Saved Console Output To: Console Output.txt",QMessageBox::Ok);
+	}
+	else
+	{
+		QMessageBox::warning(this,"Failed To Save Console Output!","Failed To Save!: "+Output->errorString(),QMessageBox::Ok);
+	}
+
+	Output->close();
+}
+
 void mlMainWindow::OnOpenZoneFile()
 {
 	QList<QTreeWidgetItem*> ItemList = mFileListWidget->selectedItems();
@@ -1703,7 +1738,6 @@ void mlMainWindow::OnSaveZone()
 		QTextStream Out(ZoneFile);
 		Out << (mZoneTextEdit->toPlainText());
 		Out.flush();
-		mOutputWidget->appendPlainText(Out.readLine());
 	}
 	else
 	{
