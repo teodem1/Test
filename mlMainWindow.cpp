@@ -1790,6 +1790,9 @@ void GDTCreatorGroupBox::dragEnterEvent(QDragEnterEvent* event)
 
 void GDTCreatorGroupBox::dropEvent(QDropEvent* event)
 {
+	QDir source_data_folder(QString("%1/source_data").arg(parentWindow->mToolsPath));
+	QDir model_export_folder(QString("%1/model_export").arg(parentWindow->mToolsPath));
+
 	const QMimeData* mimeData = event->mimeData();
 
 	if (parentWindow == NULL)
@@ -1801,20 +1804,18 @@ void GDTCreatorGroupBox::dropEvent(QDropEvent* event)
 	{
 		QStringList pathList;
 		QList<QUrl> urlList = mimeData->urls();
+		QString CurrentFile;
 
-		QDir working_dir(parentWindow->mToolsPath);
+
 		for (int i = 0; i < urlList.size(); i++)
-		{
-			pathList.append(urlList.at(i).toLocalFile());
+		{	
+			CurrentFile = urlList.at(i).toLocalFile();
+			if(!CurrentFile.endsWith(".tiff") || !CurrentFile.endsWith(".tif"))
+			{
+				QMessageBox::warning(this,"Incorrect Format!","Please Convert This File To Either XMODEL_BIN, XANIM_BIN, TIFF Or TIF",QMessageBox::Ok);
+				return;
+			}
 		}
-
-		QProcess* Process = new QProcess();
-		connect(Process, SIGNAL(finished(int)), Process, SLOT(deleteLater()));
-
-		bool allowOverwrite = this->parentWindow->mGDTCreateOverwriteWidget->isChecked();
-
-		QString outputDir = parentWindow->mGDTCreateTargetDir->text();
-		parentWindow->StartConvertThread(pathList, outputDir, allowOverwrite);
 
 		event->acceptProposedAction();
 	}
