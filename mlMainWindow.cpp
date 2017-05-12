@@ -414,6 +414,9 @@ void mlMainWindow::CreateActions()
 	mActionHelpAbout = new QAction("&About...", this);
 	connect(mActionHelpAbout, SIGNAL(triggered()), this, SLOT(OnHelpAbout()));
 
+	mActionOpenDocs = new QAction("&Documentation",this);
+	connect(mActionOpenDocs, SIGNAL(triggered()),this,SLOT(OnOpenDocs()));
+
 	mActionSaveOutput = new QAction("&Save Console Output",this);
 	mActionSaveOutput->setShortcut(QKeySequence("CTRL+S"));
 	connect(mActionSaveOutput,SIGNAL(triggered()),this,SLOT(OnSaveOutput()));
@@ -446,6 +449,7 @@ void mlMainWindow::CreateMenu()
 
 	QMenu* HelpMenu = new QMenu("&Help", MenuBar);
 	HelpMenu->addAction(mActionHelpAbout);
+	HelpMenu->addAction(mActionOpenDocs);
 	MenuBar->addAction(HelpMenu->menuAction());
 
 	setMenuBar(MenuBar);
@@ -1464,6 +1468,12 @@ void mlMainWindow::OnHelpAbout()
 {
 	QMessageBox::about(this, "About Modtools Launcher", "Treyarch Modtools Launcher\nCopyright 2016 Treyarch");
 }
+
+void mlMainWindow::OnOpenDocs()
+{
+	ShellExecute(NULL,"open",QString("%1/docs_modtools").arg(mGamePath).toLatin1().constData(),"",NULL,SW_SHOWDEFAULT);
+}
+
 
 void mlMainWindow::OnSaveOutput()
 {
