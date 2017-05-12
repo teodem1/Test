@@ -80,6 +80,7 @@ class mlMainWindow : public QMainWindow
 	Q_OBJECT
 
 	friend class Export2BinGroupBox;
+	friend class GDTCreatorGroupBox;
 
 public:
 	mlMainWindow();
@@ -101,11 +102,14 @@ protected slots:
 	void OnFileAssetEditor();
 	void OnFileLevelEditor();
 	void OnFileExport2Bin();
+	void OnFileGDTCreator();
 	void OnEditBuild();
 	void OnEditPublish();
 	void OnEditOptions();
 	void OnEditDvars();
+	void OnOpenDocs();
 	void OnHelpAbout();
+	void OnSaveOutput();
 	void OnOpenZoneFile();
 	void OnOpenModRootFolder();
 	void OnRunMapOrMod();
@@ -117,6 +121,13 @@ protected slots:
 	void BuildFinished();
 	void ContextMenuRequested();
 	void SteamUpdate();
+
+	void OnConvertButton();
+	void OpenZoneEditor();
+	void OnSaveZone();
+	void OnTextChanged();
+	void UpdateSyntax();
+	void OnCancelZone();
 
 protected:
 	void closeEvent(QCloseEvent* Event);
@@ -134,6 +145,13 @@ protected:
 	void CreateToolBar();
 
 	void InitExport2BinGUI();
+	void InitZoneEditor();
+	void InitGDTCreator();
+
+	bool mTreyarchTheme;
+	bool mUseBuiltInEditor;
+	
+	quint64 mFileId;
 
 	QAction* mActionFileNew;
 	QAction* mActionFileAssetEditor;
@@ -144,47 +162,61 @@ protected:
 	QAction* mActionEditPublish;
 	QAction* mActionEditOptions;
 	QAction* mActionHelpAbout;
+	QAction* mActionCreateGdt;
+	QAction* mActionSaveOutput;
+	QAction* mActionOpenDocs;
 
 	QTreeWidget* mFileListWidget;
+
 	QPlainTextEdit* mOutputWidget;
+	QPlainTextEdit* mZoneTextEdit;
 
 	QPushButton* mBuildButton;
 	QPushButton* mDvarsButton;
+	QPushButton* mConvertButton;
+
 	QCheckBox* mCompileEnabledWidget;
-	QComboBox* mCompileModeWidget;
 	QCheckBox* mLightEnabledWidget;
-	QComboBox* mLightQualityWidget;
 	QCheckBox* mLinkEnabledWidget;
 	QCheckBox* mRunEnabledWidget;
-	QLineEdit* mRunOptionsWidget;
 	QCheckBox* mIgnoreErrorsWidget;
+	QCheckBox* mExport2BinOverwriteWidget;
+	QCheckBox* mGDTCreateOverwriteWidget;
+	QCheckBox* mOpenAPEAfterCreation;
+
+	QComboBox* mCompileModeWidget;
+	QComboBox* mLightQualityWidget;
+
+	QLineEdit* mRunOptionsWidget;
+	QLineEdit* mExport2BinTargetDirWidget;
+	QLineEdit* mGDTCreateTargetDir;
 
 	mlBuildThread* mBuildThread;
+
 	mlConvertThread* mConvertThread;
 
 	QDockWidget* mExport2BinGUIWidget;
-	QCheckBox* mExport2BinOverwriteWidget;
-	QLineEdit* mExport2BinTargetDirWidget;
+	QDockWidget* mZoneEditorGUIWidget;
+	QDockWidget* mGDTCreatorGUIWidget;
 
-	bool mTreyarchTheme;
 	QString mBuildLanguage;
-
-	QStringList mShippedMapList;
-	QTimer mTimer;
-
-	quint64 mFileId;
 	QString mTitle;
 	QString mDescription;
 	QString mThumbnail;
 	QString mWorkshopFolder;
 	QString mFolderName;
 	QString mType;
-	QStringList mTags;
-
 	QString mGamePath;
 	QString mToolsPath;
+	QString mZonePath;
 
+	QStringList mTags;
 	QStringList mRunDvars;
+
+	QTimer mTimer;
+	QTimer SyntaxTimer;
+
+	QFile* ZoneFile;
 };
 
 class Export2BinGroupBox : public QGroupBox
@@ -199,4 +231,47 @@ protected:
 
 public:
 	Export2BinGroupBox(QWidget *parent, mlMainWindow* parent_window);
+};
+
+class GDTCreatorGroupBox : public QGroupBox
+{
+private:
+	mlMainWindow* parentWindow;
+
+protected:
+	void dragEnterEvent(QDragEnterEvent* event);
+	void dragLeaveEvent(QDragLeaveEvent* event);
+	void dropEvent(QDropEvent *event);
+
+public:
+	GDTCreatorGroupBox(QWidget *parent, mlMainWindow* parent_window);
+};
+
+class Syntax : public QSyntaxHighlighter
+{
+    Q_OBJECT
+
+public:
+    Syntax(QTextDocument *parent = 0);
+
+protected:
+    void highlightBlock(const QString &text) override;
+
+private:
+    struct SyntaxRule
+    {
+        QRegExp RegExPattern;
+        QTextCharFormat CharFormat;
+    };
+    QVector<SyntaxRule> Rules;
+
+    QRegExp commentStartExpression;
+    QRegExp commentEndExpression;
+
+    QTextCharFormat KeyWordFormat;
+	QTextCharFormat QuoteFormat;
+    QTextCharFormat SingleLineCommentFormat;
+    QTextCharFormat MultiLineCommentFormat;
+	QTextCharFormat IncludeFormat;
+	QTextCharFormat PreProcessor;
 };
