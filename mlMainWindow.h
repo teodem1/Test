@@ -80,6 +80,7 @@ class mlMainWindow : public QMainWindow
 	Q_OBJECT
 
 	friend class Export2BinGroupBox;
+	friend class GDTCreatorGroupBox;
 
 public:
 	mlMainWindow();
@@ -142,6 +143,7 @@ protected:
 
 	void InitExport2BinGUI();
 	void InitZoneEditor();
+	void InitCreatorGUIWidget();
 
 	bool mTreyarchTheme;
 	bool mUseBuiltInEditor;
@@ -157,6 +159,7 @@ protected:
 	QAction* mActionEditPublish;
 	QAction* mActionEditOptions;
 	QAction* mActionHelpAbout;
+	QAction* mActionCreateGdt;
 
 	QTreeWidget* mFileListWidget;
 
@@ -173,12 +176,15 @@ protected:
 	QCheckBox* mRunEnabledWidget;
 	QCheckBox* mIgnoreErrorsWidget;
 	QCheckBox* mExport2BinOverwriteWidget;
+	QCheckBox* mGDTCreateOverwriteWidget;
+	QCheckBox* mOpenAPEAfterCreation;
 
 	QComboBox* mCompileModeWidget;
 	QComboBox* mLightQualityWidget;
 
 	QLineEdit* mRunOptionsWidget;
 	QLineEdit* mExport2BinTargetDirWidget;
+	QLineEdit* mGDTCreateTargetDir;
 
 	mlBuildThread* mBuildThread;
 
@@ -186,6 +192,7 @@ protected:
 
 	QDockWidget* mExport2BinGUIWidget;
 	QDockWidget* mZoneEditorGUIWidget;
+	QDockWidget* mGDTCreatorGUIWidget;
 
 	QString mBuildLanguage;
 	QString mTitle;
@@ -219,6 +226,20 @@ protected:
 
 public:
 	Export2BinGroupBox(QWidget *parent, mlMainWindow* parent_window);
+};
+
+class GDTCreatorGroupBox : public QGroupBox
+{
+private:
+	mlMainWindow* parentWindow;
+
+protected:
+	void dragEnterEvent(QDragEnterEvent* event);
+	void dragLeaveEvent(QDragLeaveEvent* event);
+	void dropEvent(QDropEvent *event);
+
+public:
+	GDTCreatorGroupBox(QWidget *parent, mlMainWindow* parent_window);
 };
 
 class Syntax : public QSyntaxHighlighter

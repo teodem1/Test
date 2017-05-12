@@ -95,8 +95,7 @@ void mlBuildThread::run()
 	mSuccess = Success;
 }
 
-mlConvertThread::mlConvertThread(QStringList& Files, QString& OutputDir, bool IgnoreErrors, bool OverwriteFiles)
-	: mFiles(Files), mOutputDir(OutputDir), mSuccess(false), mCancel(false), mIgnoreErrors(IgnoreErrors), mOverwrite(OverwriteFiles)
+mlConvertThread::mlConvertThread(QStringList& Files, QString& OutputDir, bool IgnoreErrors, bool OverwriteFiles)	: mFiles(Files), mOutputDir(OutputDir), mSuccess(false), mCancel(false), mIgnoreErrors(IgnoreErrors), mOverwrite(OverwriteFiles)
 {
 }
 
@@ -249,10 +248,16 @@ mlMainWindow::mlMainWindow()
 	mUseBuiltInEditor= Settings.value("InBuiltEditor",false).toBool();
 
 	// Qt prefers '/' over '\\'
-	mGamePath = QDir::fromNativeSeparators(getenv("TA_GAME_PATH"));
-	mGamePath.chop(1);
-	mToolsPath = QDir::fromNativeSeparators(getenv("TA_TOOLS_PATH"));
-	mToolsPath.chop(1);
+	// Deemed Broken by Johnatohn - 
+	/*
+		mGamePath = QDir::fromNativeSeparators(getenv("TA_GAME_PATH"));
+		mGamePath.chop(1);
+		mToolsPath = QDir::fromNativeSeparators(getenv("TA_TOOLS_PATH"));
+		mToolsPath.chop(1);
+	*/
+	mGamePath = QString(getenv("TA_GAME_PATH")).replace('\\', '/');
+	mToolsPath = QString(getenv("TA_TOOLS_PATH")).replace('\\', '/');
+
 
 	UpdateTheme();
 
@@ -266,6 +271,8 @@ mlMainWindow::mlMainWindow()
 	CreateToolBar();
 
 	mExport2BinGUIWidget = NULL;
+	mGDTCreatorGUIWidget = NULL;
+	mZoneEditorGUIWidget = NULL;
 
 	QSplitter* CentralWidget = new QSplitter();
 	CentralWidget->setOrientation(Qt::Vertical);
@@ -380,9 +387,13 @@ void mlMainWindow::CreateActions()
 	mActionFileLevelEditor->setToolTip("Level Editor");
 	connect(mActionFileLevelEditor, SIGNAL(triggered()), this, SLOT(OnFileLevelEditor()));
 
-	mActionFileExport2Bin = new QAction(QIcon(":/resources/Export2Bin.png"), "&Export2Bin GUI", this);
+	mActionFileExport2Bin = new QAction(QIcon(":/resources/devhead.png"), "&Export2Bin GUI", this);
 	mActionFileExport2Bin->setShortcut(QKeySequence("Ctrl+E"));
 	connect(mActionFileExport2Bin, SIGNAL(triggered()), this, SLOT(OnFileExport2Bin()));
+
+	mActionCreateGdt = new QAction(QIcon(":/resources/Export2Bin.png"), "&GDT Creator", this);
+	mActionCreateGdt->setShortcut(QKeySequence("Ctrl+G"));
+	connect(mActionCreateGdt, SIGNAL(triggered()), this, SLOT(OnFileGDTCreator()));
 
 	mActionFileExit = new QAction("E&xit", this);
 	connect(mActionFileExit, SIGNAL(triggered()), this, SLOT(close()));
@@ -400,6 +411,7 @@ void mlMainWindow::CreateActions()
 
 	mActionHelpAbout = new QAction("&About...", this);
 	connect(mActionHelpAbout, SIGNAL(triggered()), this, SLOT(OnHelpAbout()));
+
 }
 
 void mlMainWindow::CreateMenu()
@@ -442,6 +454,7 @@ void mlMainWindow::CreateToolBar()
 	ToolBar->addAction(mActionFileAssetEditor);
 	ToolBar->addAction(mActionFileLevelEditor);
 	ToolBar->addAction(mActionFileExport2Bin);
+	ToolBar->addAction(mActionCreateGdt);
 
 	ToolBar->setMovable(false);
 
@@ -529,20 +542,12 @@ void mlMainWindow::UpdateDB()
 
 void mlMainWindow::StartBuildThread(const QList<QPair<QString, QStringList>>& Commands)
 {
-	if(mBuildThread == NULL)
-	{
 		mBuildButton->setText("Cancel");
-		mOutputWidget->clear();
 
 		mBuildThread = new mlBuildThread(Commands, mIgnoreErrorsWidget->isChecked());
 		connect(mBuildThread, SIGNAL(OutputReady(QString)), this, SLOT(BuildOutputReady(QString)));
 		connect(mBuildThread, SIGNAL(finished()), this, SLOT(BuildFinished()));
 		mBuildThread->start();
-	}
-	else
-	{
-		QMessageBox::information(this,"Task In Progress","There is already a something running. Please wait.",QMessageBox::Button::Ok);
-	}
 }
 
 void mlMainWindow::StartConvertThread(QStringList& pathList, QString& outputDir, bool allowOverwrite)
@@ -859,10 +864,10 @@ void mlMainWindow::OnEditBuild()
 				else
 					Args << "-navmesh" << "-navvolume";
 
-				Args << "-loadFrom" << QString("%1/map_source/%2/%3.map").arg(mGamePath, MapName.left(2), MapName);
-				Args << QString("%1/share/raw/maps/%2/%3.d3dbsp").arg(mGamePath, MapName.left(2), MapName);
+				Args << "-loadFrom" << QString("%1\\map_source\\%2\\%3.map").arg(mGamePath, MapName.left(2), MapName);
+                Args << QString("%1\\share\\raw\\maps\\%2\\%3.d3dbsp").arg(mGamePath, MapName.left(2), MapName);
 
-				Commands.append(QPair<QString, QStringList>(QString("%1/bin/cod2map64.exe").arg(mToolsPath), Args));
+				Commands.append(QPair<QString, QStringList>(QString("%1\\bin\\cod2map64.exe").arg(mToolsPath), Args));
 			}
 
 			if (mLightEnabledWidget->isChecked())
@@ -1637,7 +1642,7 @@ void mlMainWindow::InitZoneEditor()
 	while(!Read.atEnd()) {
 		mZoneTextEdit->appendPlainText(Read.readLine());        
 	}
-	 
+
 	ZoneFile->close();
 
 	GridLayout->addWidget(mZoneTextEdit,0,0,1,2);
@@ -1684,6 +1689,7 @@ void mlMainWindow::UpdateSyntax()
 {
 	Syntax* highlighter = new Syntax(mZoneTextEdit->document());
 }
+
 
 Export2BinGroupBox::Export2BinGroupBox(QWidget* parent, mlMainWindow* parent_window) : QGroupBox(parent), parentWindow(parent_window)
 {
@@ -1760,7 +1766,7 @@ Syntax::Syntax(QTextDocument *parent) : QSyntaxHighlighter(parent)
 	CurrentRule.RegExPattern = QRegExp("//[^\n]*"); //Start With //, Continue To New Line.
 	CurrentRule.CharFormat = SingleLineCommentFormat;
 	Rules.append(CurrentRule);
-	
+
 	PreProcessor.setForeground(QColor("#a09c85"));
 	CurrentRule.RegExPattern = QRegExp(">[^\n]*");
 	CurrentRule.CharFormat = PreProcessor;
