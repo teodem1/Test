@@ -1714,9 +1714,29 @@ void mlMainWindow::InitZoneEditor()
 	QGridLayout* GridLayout = new QGridLayout();
 	mZoneTextEdit = new QPlainTextEdit();
 	QPushButton* ZoneSave = new QPushButton();
-	QPushButton* ZoneCancel = new QPushButton();
+	QPushButton* ZoneCancel = new QPushButton();	
+	QStringList AcceptableFileTypes;
+	AcceptableFileTypes << "*.gsc" << "*.csc" << "*.gsh";
 
-	Dock->resize(QSize(460, 480));
+	mFileTree = new QTreeView(this);
+	mScriptList = new QFileSystemModel(this);
+
+	mScriptList->setFilter(QDir::AllDirs | QDir::NoDotAndDotDot | QDir::Files | QDir::NoSymLinks);
+	
+	mScriptList->setNameFilters(AcceptableFileTypes);
+	mScriptList->setNameFilterDisables(false);
+
+    mScriptList->setRootPath(mToolsPath);
+
+	mFileTree->setModel(mScriptList);
+	mFileTree->setRootIndex(mScriptList->setRootPath(mToolsPath));
+
+	for (int x = 1; x < mScriptList->columnCount(); x++)
+		mFileTree->hideColumn(x);
+
+
+
+	Dock->resize(QSize(720,720));
 	Dock->setWindowTitle("Zone Editor");
 	Dock->setFloating(true);
 	Dock->setWidget(Widget);
@@ -1741,7 +1761,8 @@ void mlMainWindow::InitZoneEditor()
 
 	ZoneFile->close();
 
-	GridLayout->addWidget(mZoneTextEdit,0,0,1,2);
+	GridLayout->addWidget(mFileTree,0,0);
+	GridLayout->addWidget(mZoneTextEdit,0,1);
 	GridLayout->addWidget(ZoneSave,1,0);
 	GridLayout->addWidget(ZoneCancel,1,1);
 

@@ -226,7 +226,8 @@ protected:
 
 	QFile* ZoneFile;
 
-	QColorDialog* SyntaxColorPicker;
+	QFileSystemModel* mScriptList;
+	QTreeView* mFileTree;
 };
 
 class Export2BinGroupBox : public QGroupBox
