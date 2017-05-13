@@ -1834,7 +1834,7 @@ Syntax::Syntax(QTextDocument *parent) : QSyntaxHighlighter(parent)
 
 	KeyWordFormat.setForeground(QColor("#63a058"));
 	QStringList Patterns;
-	Patterns << "scriptparsetree" << "rawfile" << "scriptbundle" << "xmodel" << "actor"; //I Can't Find Docs On All, Would Be Nice To Get The Rest :).
+	Patterns << "scriptparsetree" << "rawfile" << "scriptbundle" << "xmodel" << "actor"; //I Can't Find Docs On All, Would Be Nice To Get The Rest :)
 
 	foreach (const QString &Pattern, Patterns) {
 		CurrentRule.RegExPattern = QRegExp(Pattern);
