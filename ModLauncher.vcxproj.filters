@@ -55,6 +55,18 @@
     <ClCompile Include="dvar.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="syntax.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\External_Release\moc_syntax.cpp">
+      <Filter>Generated Files\External_Release</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug\moc_syntax.cpp">
+      <Filter>Generated Files\Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release\moc_syntax.cpp">
+      <Filter>Generated Files\Release</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="ModLauncher.rc">
@@ -72,6 +84,9 @@
       <Filter>Source Files</Filter>
     </CustomBuild>
     <CustomBuild Include="stdafx.h">
+      <Filter>Source Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="syntax.h">
       <Filter>Source Files</Filter>
     </CustomBuild>
   </ItemGroup>
