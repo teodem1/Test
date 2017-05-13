@@ -21,8 +21,6 @@
 #include <QtWidgets/QtWidgets>
 #include "steam_api.h"
 #include "dvar.h"
-#include "syntax.h"
 
 class mlMainWindow;
 class mlExport2BinWidget;
-class Syntax;
