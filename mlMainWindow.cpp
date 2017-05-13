@@ -246,15 +246,9 @@ mlMainWindow::mlMainWindow()
 	mBuildLanguage = Settings.value("BuildLanguage", "english").toString();
 	mTreyarchTheme = Settings.value("UseDarkTheme", false).toBool();
 	mUseBuiltInEditor= Settings.value("InBuiltEditor",false).toBool();
+	mOpenAPEAfter = Settings.value("GDTCreate_OpenAPEAfterCreation",false).toBool();
 
-	// Qt prefers '/' over '\\'
-	// Deemed Broken by Johnatohn - 
-	/*
-	mGamePath = QDir::fromNativeSeparators(getenv("TA_GAME_PATH"));
-	mGamePath.chop(1);
-	mToolsPath = QDir::fromNativeSeparators(getenv("TA_TOOLS_PATH"));
-	mToolsPath.chop(1);
-	*/
+
 	mGamePath = QString(getenv("TA_GAME_PATH")).replace('\\', '/');
 	mToolsPath = QString(getenv("TA_TOOLS_PATH")).replace('\\', '/');
 
@@ -545,6 +539,14 @@ void mlMainWindow::InitGDTCreator()
 	QVBoxLayout* groupBoxLayout = new QVBoxLayout(groupBox);
 	groupBoxLayout->addWidget(label);
 	groupBox->setLayout(groupBoxLayout);
+	
+	mOpenAPEAfterCreation = new QCheckBox("&Open APE After Creation", widget);
+	gridLayout->addWidget(mOpenAPEAfterCreation, 1, 0);
+
+	QSettings Settings;
+	mOpenAPEAfterCreation->setChecked(Settings.value("GDTCreate_OpenAPEAfterCreation", true).toBool());
+
+	connect(mOpenAPEAfterCreation, SIGNAL(clicked()), this, SLOT(OnOpenAPEAfterToggle()));
 	 //Do things
 	groupBox->setAcceptDrops(true);
 
@@ -1474,7 +1476,6 @@ void mlMainWindow::OnOpenDocs()
 	ShellExecute(NULL,"open",QString("%1/docs_modtools").arg(mGamePath).toLatin1().constData(),"",NULL,SW_SHOWDEFAULT);
 }
 
-
 void mlMainWindow::OnSaveOutput()
 {
 	QFile* Output = new QFile("Console Output.txt");
@@ -1668,6 +1669,13 @@ void mlMainWindow::OnExport2BinToggleOverwriteFiles()
 	Settings.setValue("Export2Bin_OverwriteFiles", mExport2BinOverwriteWidget->isChecked());
 }
 
+void mlMainWindow::OnOpenAPEAfterToggle()
+{
+	QSettings Settings;
+	Settings.setValue("GDTCreate_OpenAPEAfterCreation", mOpenAPEAfterCreation->isChecked());
+	
+}
+
 void mlMainWindow::BuildOutputReady(QString Output)
 {
 	mOutputWidget->appendPlainText(Output);
@@ -1777,7 +1785,6 @@ void mlMainWindow::UpdateSyntax()
 	Syntax* highlighter = new Syntax(mZoneTextEdit->document());
 }
 
-
 GDTCreatorGroupBox::GDTCreatorGroupBox(QWidget* parent, mlMainWindow* parent_window) : QGroupBox(parent), parentWindow(parent_window)
 {
 	this->setAcceptDrops(true);
@@ -1875,11 +1882,12 @@ void Export2BinGroupBox::dragLeaveEvent(QDragLeaveEvent* event)
 
 Syntax::Syntax(QTextDocument *parent) : QSyntaxHighlighter(parent)
 {
+	QSettings Settings;
 	SyntaxRule CurrentRule;
 
 	KeyWordFormat.setForeground(QColor("#63a058"));
 	QStringList Patterns;
-	Patterns << "scriptparsetree" << "rawfile" << "scriptbundle" << "xmodel" << "actor"; //I Can't Find Docs On All, Would Be Nice To Get The Rest :).
+	Patterns << "scriptparsetree" << "rawfile" << "scriptbundle" << "xmodel" << "actor" << "material" << "col_map" << "gfx_map" << "sound"; //I Can't Find Docs On All, Would Be Nice To Get The Rest :).
 
 	foreach (const QString &Pattern, Patterns) {
 		CurrentRule.RegExPattern = QRegExp(Pattern);
@@ -1887,27 +1895,28 @@ Syntax::Syntax(QTextDocument *parent) : QSyntaxHighlighter(parent)
 		Rules.append(CurrentRule);
 	}
 
-	IncludeFormat.setForeground(QColor("#fc8eac"));
+	//Make It So I Can Set These Somehow?
+	IncludeFormat.setForeground(QColor(Settings.value("IncludeFormat_Color", "#fc8eac").toString()));
 	CurrentRule.RegExPattern = QRegExp("#[^\n]*"); //Start With #, Continue To New Line.
 	CurrentRule.CharFormat = IncludeFormat;
 	Rules.append(CurrentRule);
 
-	QuoteFormat.setForeground(QColor("#6c6999"));
+	QuoteFormat.setForeground(QColor(Settings.value("QuoteFormat_Color","#6c6999").toString()));
 	CurrentRule.RegExPattern = QRegExp("\".*\""); //Start With ", Continue To Next ".
 	CurrentRule.CharFormat = QuoteFormat;
 	Rules.append(CurrentRule);
 
-	SingleLineCommentFormat.setForeground(QColor("#c0e4ff"));
+	SingleLineCommentFormat.setForeground(QColor(Settings.value("SingleLineCommentFormat_Color","#c0e4ff").toString()));
 	CurrentRule.RegExPattern = QRegExp("//[^\n]*"); //Start With //, Continue To New Line.
 	CurrentRule.CharFormat = SingleLineCommentFormat;
 	Rules.append(CurrentRule);
 
-	PreProcessor.setForeground(QColor("#a09c85"));
-	CurrentRule.RegExPattern = QRegExp(">[^\n]*");
+	PreProcessor.setForeground(QColor(Settings.value("PreProcessor_Color","#a09c85").toString()));
+	CurrentRule.RegExPattern = QRegExp(">[^\n]*"); //Start with >, Continue To New Line.
 	CurrentRule.CharFormat = PreProcessor;
 	Rules.append(CurrentRule);
 
-	MultiLineCommentFormat.setForeground(QColor("#c0e4ff"));
+	MultiLineCommentFormat.setForeground(QColor(Settings.value("MultiLineCommentFormat_Color","#c0e4ff").toString()));
 	commentStartExpression = QRegExp("/\\*");
 	commentEndExpression = QRegExp("\\*/");
 }

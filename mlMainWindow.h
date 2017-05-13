@@ -117,6 +117,7 @@ protected slots:
 	void OnDelete();
 	void OnExport2BinChooseDirectory();
 	void OnExport2BinToggleOverwriteFiles();
+	void OnOpenAPEAfterToggle();
 	void BuildOutputReady(QString Output);
 	void BuildFinished();
 	void ContextMenuRequested();
@@ -150,7 +151,14 @@ protected:
 
 	bool mTreyarchTheme;
 	bool mUseBuiltInEditor;
+	bool mOpenAPEAfter;
 	
+	QString mIncludeFormat;
+	QString mQuoteFormat;
+	QString mSingleLineCommentFormat;
+	QString mPreProcessor;
+	QString mMultiLineCommentFormat;
+
 	quint64 mFileId;
 
 	QAction* mActionFileNew;
@@ -217,6 +225,8 @@ protected:
 	QTimer SyntaxTimer;
 
 	QFile* ZoneFile;
+
+	QColorDialog* SyntaxColorPicker;
 };
 
 class Export2BinGroupBox : public QGroupBox
