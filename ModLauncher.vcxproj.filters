@@ -67,6 +67,9 @@
     <ClCompile Include="GeneratedFiles\Release\moc_syntax.cpp">
       <Filter>Generated Files\Release</Filter>
     </ClCompile>
+    <ClCompile Include="GDTCreator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="ModLauncher.rc">
@@ -92,6 +95,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="dvar.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GDTCreator.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

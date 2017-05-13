@@ -22,7 +22,9 @@
 #include "steam_api.h"
 #include "dvar.h"
 #include "syntax.h"
+#include "GDTCreator.h"
 
 class mlMainWindow;
 class mlExport2BinWidget;
 class Syntax;
+class GDTCreatorGroupBox;
