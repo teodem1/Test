@@ -366,6 +366,8 @@ mlMainWindow::mlMainWindow()
 	SyntaxTimer.setSingleShot(true);
 	connect(&SyntaxTimer,SIGNAL(timeout()),this,SLOT(UpdateSyntax()));
 	PopulateFileList();
+
+	mRunOptionsWidget->setPlaceholderText("Optional Run Args");
 }
 
 mlMainWindow::~mlMainWindow()
@@ -412,6 +414,13 @@ void mlMainWindow::CreateActions()
 	mActionHelpAbout = new QAction("&About...", this);
 	connect(mActionHelpAbout, SIGNAL(triggered()), this, SLOT(OnHelpAbout()));
 
+	mActionOpenDocs = new QAction("&Documentation",this);
+	connect(mActionOpenDocs, SIGNAL(triggered()),this,SLOT(OnOpenDocs()));
+
+	mActionSaveOutput = new QAction("&Save Console Output",this);
+	mActionSaveOutput->setShortcut(QKeySequence("CTRL+S"));
+	connect(mActionSaveOutput,SIGNAL(triggered()),this,SLOT(OnSaveOutput()));
+
 }
 
 void mlMainWindow::CreateMenu()
@@ -424,6 +433,9 @@ void mlMainWindow::CreateMenu()
 	FileMenu->addAction(mActionFileAssetEditor);
 	FileMenu->addAction(mActionFileLevelEditor);
 	FileMenu->addAction(mActionFileExport2Bin);
+	FileMenu->addAction(mActionCreateGdt);
+	FileMenu->addSeparator();
+	FileMenu->addAction(mActionSaveOutput);
 	FileMenu->addSeparator();
 	FileMenu->addAction(mActionFileExit);
 	MenuBar->addAction(FileMenu->menuAction());
@@ -437,6 +449,7 @@ void mlMainWindow::CreateMenu()
 
 	QMenu* HelpMenu = new QMenu("&Help", MenuBar);
 	HelpMenu->addAction(mActionHelpAbout);
+	HelpMenu->addAction(mActionOpenDocs);
 	MenuBar->addAction(HelpMenu->menuAction());
 
 	setMenuBar(MenuBar);
@@ -569,12 +582,19 @@ void mlMainWindow::UpdateDB()
 
 void mlMainWindow::StartBuildThread(const QList<QPair<QString, QStringList>>& Commands)
 {
+	if(mBuildThread == NULL)
+	{
 	mBuildButton->setText("Cancel");
 
 	mBuildThread = new mlBuildThread(Commands, mIgnoreErrorsWidget->isChecked());
 	connect(mBuildThread, SIGNAL(OutputReady(QString)), this, SLOT(BuildOutputReady(QString)));
 	connect(mBuildThread, SIGNAL(finished()), this, SLOT(BuildFinished()));
 	mBuildThread->start();
+	}
+	else
+	{
+		QMessageBox::warning(NULL,"Task In Progress","There Is Already A Task In Progress.\nPlease Wait Or Cancel It!",QMessageBox::Ok);
+	}
 }
 
 void mlMainWindow::StartConvertThread(QStringList& pathList, QString& outputDir, bool allowOverwrite)
@@ -659,6 +679,7 @@ void mlMainWindow::ContextMenuRequested()
 		Menu->addAction(mActionFileLevelEditor);
 
 	Menu->addAction("Edit Zone File", this, SLOT(OnOpenZoneFile()));
+
 	Menu->addAction(QString("Open %1 Folder").arg(ItemType), this, SLOT(OnOpenModRootFolder()));
 
 	Menu->addSeparator();
@@ -1448,6 +1469,30 @@ void mlMainWindow::OnHelpAbout()
 	QMessageBox::about(this, "About Modtools Launcher", "Treyarch Modtools Launcher\nCopyright 2016 Treyarch");
 }
 
+void mlMainWindow::OnOpenDocs()
+{
+	ShellExecute(NULL,"open",QString("%1/docs_modtools").arg(mGamePath).toLatin1().constData(),"",NULL,SW_SHOWDEFAULT);
+}
+
+
+void mlMainWindow::OnSaveOutput()
+{
+	QFile* Output = new QFile("Console Output.txt");
+	if(Output->open(QIODevice::WriteOnly | QIODevice::Text))
+	{
+		QTextStream Out(Output);
+		Out << (mOutputWidget->toPlainText());
+		Out.flush();
+		QMessageBox::information(this,"Saved Console Output","Saved Console Output To: Console Output.txt",QMessageBox::Ok);
+	}
+	else
+	{
+		QMessageBox::warning(this,"Failed To Save Console Output!","Failed To Save!: "+Output->errorString(),QMessageBox::Ok);
+	}
+
+	Output->close();
+}
+
 void mlMainWindow::OnOpenZoneFile()
 {
 	QList<QTreeWidgetItem*> ItemList = mFileListWidget->selectedItems();
@@ -1703,7 +1748,6 @@ void mlMainWindow::OnSaveZone()
 		QTextStream Out(ZoneFile);
 		Out << (mZoneTextEdit->toPlainText());
 		Out.flush();
-		mOutputWidget->appendPlainText(Out.readLine());
 	}
 	else
 	{
@@ -1746,6 +1790,9 @@ void GDTCreatorGroupBox::dragEnterEvent(QDragEnterEvent* event)
 
 void GDTCreatorGroupBox::dropEvent(QDropEvent* event)
 {
+	QDir source_data_folder(QString("%1/source_data").arg(parentWindow->mToolsPath));
+	QDir model_export_folder(QString("%1/model_export").arg(parentWindow->mToolsPath));
+
 	const QMimeData* mimeData = event->mimeData();
 
 	if (parentWindow == NULL)
@@ -1757,20 +1804,18 @@ void GDTCreatorGroupBox::dropEvent(QDropEvent* event)
 	{
 		QStringList pathList;
 		QList<QUrl> urlList = mimeData->urls();
+		QString CurrentFile;
 
-		QDir working_dir(parentWindow->mToolsPath);
+
 		for (int i = 0; i < urlList.size(); i++)
-		{
-			pathList.append(urlList.at(i).toLocalFile());
+		{	
+			CurrentFile = urlList.at(i).toLocalFile();
+			if(!CurrentFile.endsWith(".tiff") || !CurrentFile.endsWith(".tif"))
+			{
+				QMessageBox::warning(this,"Incorrect Format!","Please Convert This File To Either XMODEL_BIN, XANIM_BIN, TIFF Or TIF",QMessageBox::Ok);
+				return;
+			}
 		}
-
-		QProcess* Process = new QProcess();
-		connect(Process, SIGNAL(finished(int)), Process, SLOT(deleteLater()));
-
-		bool allowOverwrite = this->parentWindow->mGDTCreateOverwriteWidget->isChecked();
-
-		QString outputDir = parentWindow->mGDTCreateTargetDir->text();
-		parentWindow->StartConvertThread(pathList, outputDir, allowOverwrite);
 
 		event->acceptProposedAction();
 	}
