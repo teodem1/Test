@@ -129,6 +129,7 @@ protected slots:
 	void OnTextChanged();
 	void UpdateSyntax();
 	void OnCancelZone();
+	void OnItemSelected(const QItemSelection&,const QItemSelection&);
 
 protected:
 	void closeEvent(QCloseEvent* Event);
@@ -152,7 +153,8 @@ protected:
 	bool mTreyarchTheme;
 	bool mUseBuiltInEditor;
 	bool mOpenAPEAfter;
-	
+	bool mUseExpertZone;
+
 	QString mIncludeFormat;
 	QString mQuoteFormat;
 	QString mSingleLineCommentFormat;

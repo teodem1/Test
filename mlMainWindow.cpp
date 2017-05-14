@@ -247,7 +247,7 @@ mlMainWindow::mlMainWindow()
 	mTreyarchTheme = Settings.value("UseDarkTheme", false).toBool();
 	mUseBuiltInEditor= Settings.value("InBuiltEditor",false).toBool();
 	mOpenAPEAfter = Settings.value("GDTCreate_OpenAPEAfterCreation",false).toBool();
-
+	mUseExpertZone = Settings.value("Expert_ZoneEditor",false).toBool();
 
 	mGamePath = QString(getenv("TA_GAME_PATH")).replace('\\', '/');
 	mToolsPath = QString(getenv("TA_TOOLS_PATH")).replace('\\', '/');
@@ -1221,6 +1221,11 @@ void mlMainWindow::OnEditOptions()
 	InBuiltEditor->setChecked(Settings.value("InBuiltEditor",false).toBool());
 	Layout->addWidget(InBuiltEditor);
 
+	QCheckBox* AdvanceEditor = new QCheckBox("Use Advance Zone Editor Features");
+	AdvanceEditor->setToolTip("Toggle between basic and advance zone editor features.");
+	AdvanceEditor->setChecked(Settings.value("Expert_ZoneEditor",false).toBool());
+	Layout->addWidget(AdvanceEditor);
+
 	QHBoxLayout* LanguageLayout = new QHBoxLayout();
 	LanguageLayout->addWidget(new QLabel("Build Language:"));
 
@@ -1252,10 +1257,12 @@ void mlMainWindow::OnEditOptions()
 	mBuildLanguage = LanguageCombo->currentText();
 	mTreyarchTheme = Checkbox->isChecked();
 	mUseBuiltInEditor = InBuiltEditor->isChecked();
+	mUseExpertZone = AdvanceEditor->isChecked();
 
 	Settings.setValue("BuildLanguage", mBuildLanguage);
 	Settings.setValue("UseDarkTheme", mTreyarchTheme);
 	Settings.setValue("InBuiltEditor",mUseBuiltInEditor);
+	Settings.setValue("Expert_ZoneEditor",mUseExpertZone);
 	UpdateTheme();
 }
 
@@ -1698,11 +1705,8 @@ void mlMainWindow::OnConvertButton()
 
 void mlMainWindow::OpenZoneEditor()
 {
-	if (mZoneEditorGUIWidget == NULL)
-	{
-		InitZoneEditor();
-		mZoneEditorGUIWidget->hide();
-	}
+	InitZoneEditor();
+	mZoneEditorGUIWidget->hide();
 
 	mZoneEditorGUIWidget->isVisible() ? mZoneEditorGUIWidget->hide() : mZoneEditorGUIWidget->show();
 }
@@ -1718,7 +1722,7 @@ void mlMainWindow::InitZoneEditor()
 	QStringList AcceptableFileTypes;
 	AcceptableFileTypes << "*.gsc" << "*.csc" << "*.gsh";
 
-	mFileTree = new QTreeView(this);
+	mFileTree = new QTreeView();
 	mScriptList = new QFileSystemModel(this);
 
 	mScriptList->setFilter(QDir::AllDirs | QDir::NoDotAndDotDot | QDir::Files | QDir::NoSymLinks);
@@ -1734,8 +1738,6 @@ void mlMainWindow::InitZoneEditor()
 	for (int x = 1; x < mScriptList->columnCount(); x++)
 		mFileTree->hideColumn(x);
 
-
-
 	Dock->resize(QSize(720,720));
 	Dock->setWindowTitle("Zone Editor");
 	Dock->setFloating(true);
@@ -1749,6 +1751,9 @@ void mlMainWindow::InitZoneEditor()
 	connect(ZoneSave, SIGNAL(clicked()), this, SLOT(OnSaveZone()));
 	connect(ZoneCancel,SIGNAL(clicked()),this,SLOT(OnCancelZone()));
 	connect(mZoneTextEdit, SIGNAL(textChanged()),this,SLOT(OnTextChanged()));
+
+	connect(mFileTree->selectionModel(), SIGNAL(selectionChanged(const QItemSelection&,const QItemSelection&)), this, SLOT(OnItemSelected(const QItemSelection&,const QItemSelection&)));
+	
 
 	ZoneFile = new QFile(mZonePath);
 	if(!ZoneFile->open(QIODevice::ReadOnly))
@@ -1767,6 +1772,38 @@ void mlMainWindow::InitZoneEditor()
 	GridLayout->addWidget(ZoneCancel,1,1);
 
 	mZoneEditorGUIWidget = Dock;
+}
+
+void mlMainWindow::OnItemSelected(const QItemSelection& Selected, const QItemSelection& Deselected)
+{
+
+	QModelIndex CurrentIndex = mFileTree->currentIndex();
+	
+	QModelIndexList parents;
+	parents << CurrentIndex;
+
+	while ( parents.last().isValid()) 
+	{
+		if(parents.last().parent().data().toString() == "raw")
+		{
+			//Implement endsWith() yadayadya stuffs. parent folder checking and finally inserting.
+		}
+		else
+		{
+			QSettings Settings;
+			if(Settings.value("Expert_ZoneEditor", false).toBool() == false)
+			{
+				QMessageBox::critical(this,"Hold On!","I Don't Support Adding Files From Here!\nPlease Use The Raw Folder Or Enable Expert Mode In Settings.",QMessageBox::Ok);
+				break;
+			}
+			else
+			{
+				QString result = QInputDialog::getText(0, "What Is This?", "Enter What Type Of Asset This Is:", QLineEdit::Normal,"scriptparsetree,xmodel,materal", new bool());
+				mZoneTextEdit->appendPlainText(QString("%1,%2").arg(result,CurrentIndex.data().toString())); //Gotta get loop working, appent strings etc ya know the usual stuff.
+			}
+		}
+		parents << parents.last().parent();
+	}
 }
 
 void mlMainWindow::OnSaveZone()
