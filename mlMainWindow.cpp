@@ -539,7 +539,7 @@ void mlMainWindow::InitGDTCreator()
 	QVBoxLayout* groupBoxLayout = new QVBoxLayout(groupBox);
 	groupBoxLayout->addWidget(label);
 	groupBox->setLayout(groupBoxLayout);
-	
+
 	mOpenAPEAfterCreation = new QCheckBox("&Open APE After Creation", widget);
 	gridLayout->addWidget(mOpenAPEAfterCreation, 1, 0);
 
@@ -547,7 +547,7 @@ void mlMainWindow::InitGDTCreator()
 	mOpenAPEAfterCreation->setChecked(Settings.value("GDTCreate_OpenAPEAfterCreation", true).toBool());
 
 	connect(mOpenAPEAfterCreation, SIGNAL(clicked()), this, SLOT(OnOpenAPEAfterToggle()));
-	 //Do things
+	//Do things
 	groupBox->setAcceptDrops(true);
 
 	dock->resize(QSize(256, 256));
@@ -586,12 +586,12 @@ void mlMainWindow::StartBuildThread(const QList<QPair<QString, QStringList>>& Co
 {
 	if(mBuildThread == NULL)
 	{
-	mBuildButton->setText("Cancel");
+		mBuildButton->setText("Cancel");
 
-	mBuildThread = new mlBuildThread(Commands, mIgnoreErrorsWidget->isChecked());
-	connect(mBuildThread, SIGNAL(OutputReady(QString)), this, SLOT(BuildOutputReady(QString)));
-	connect(mBuildThread, SIGNAL(finished()), this, SLOT(BuildFinished()));
-	mBuildThread->start();
+		mBuildThread = new mlBuildThread(Commands, mIgnoreErrorsWidget->isChecked());
+		connect(mBuildThread, SIGNAL(OutputReady(QString)), this, SLOT(BuildOutputReady(QString)));
+		connect(mBuildThread, SIGNAL(finished()), this, SLOT(BuildFinished()));
+		mBuildThread->start();
 	}
 	else
 	{
@@ -1680,7 +1680,7 @@ void mlMainWindow::OnOpenAPEAfterToggle()
 {
 	QSettings Settings;
 	Settings.setValue("GDTCreate_OpenAPEAfterCreation", mOpenAPEAfterCreation->isChecked());
-	
+
 }
 
 void mlMainWindow::BuildOutputReady(QString Output)
@@ -1726,11 +1726,11 @@ void mlMainWindow::InitZoneEditor()
 	mScriptList = new QFileSystemModel(this);
 
 	mScriptList->setFilter(QDir::AllDirs | QDir::NoDotAndDotDot | QDir::Files | QDir::NoSymLinks);
-	
+
 	mScriptList->setNameFilters(AcceptableFileTypes);
 	mScriptList->setNameFilterDisables(false);
 
-    mScriptList->setRootPath(mToolsPath);
+	mScriptList->setRootPath(mToolsPath);
 
 	mFileTree->setModel(mScriptList);
 	mFileTree->setRootIndex(mScriptList->setRootPath(mToolsPath));
@@ -1753,7 +1753,7 @@ void mlMainWindow::InitZoneEditor()
 	connect(mZoneTextEdit, SIGNAL(textChanged()),this,SLOT(OnTextChanged()));
 
 	connect(mFileTree->selectionModel(), SIGNAL(selectionChanged(const QItemSelection&,const QItemSelection&)), this, SLOT(OnItemSelected(const QItemSelection&,const QItemSelection&)));
-	
+
 
 	ZoneFile = new QFile(mZonePath);
 	if(!ZoneFile->open(QIODevice::ReadOnly))
@@ -1776,10 +1776,10 @@ void mlMainWindow::InitZoneEditor()
 
 void mlMainWindow::OnItemSelected(const QItemSelection& Selected, const QItemSelection& Deselected)
 {
-
 	QModelIndex CurrentIndex = mFileTree->currentIndex();
-	
+
 	QModelIndexList parents;
+	QStringList AppendableDirs;
 	parents << CurrentIndex;
 
 	while ( parents.last().isValid()) 
@@ -1787,6 +1787,7 @@ void mlMainWindow::OnItemSelected(const QItemSelection& Selected, const QItemSel
 		if(parents.last().parent().data().toString() == "raw")
 		{
 			//Implement endsWith() yadayadya stuffs. parent folder checking and finally inserting.
+			break;
 		}
 		else
 		{
@@ -1798,8 +1799,34 @@ void mlMainWindow::OnItemSelected(const QItemSelection& Selected, const QItemSel
 			}
 			else
 			{
-				QString result = QInputDialog::getText(0, "What Is This?", "Enter What Type Of Asset This Is:", QLineEdit::Normal,"scriptparsetree,xmodel,materal", new bool());
-				mZoneTextEdit->appendPlainText(QString("%1,%2").arg(result,CurrentIndex.data().toString())); //Gotta get loop working, appent strings etc ya know the usual stuff.
+
+				QInputDialog AssetType;
+				QStringList AssetList;
+				AssetList << "col_map" << "gfx_map" << "fx" << "scriptparsetree" << "rawfile" << "scriptbundle";
+				AssetType.setOption(QInputDialog::UseListViewForComboBoxItems);
+				AssetType.setWindowTitle(tr("Asset Type"));
+				AssetType.setLabelText(tr("What Is This?:"));
+				AssetType.setComboBoxItems(AssetList);
+				int Ret = AssetType.exec();
+
+				if (Ret != QDialog::Accepted)
+					break;
+
+				if(!AssetType.textValue().isEmpty())
+				{
+				/*	foreach(auto Parent, parents)
+					{
+						QString Last = Parent.data().toString();
+						if(Last != Parent.data().toString())
+						{
+							
+						AppendableDirs << Parent.data().toString();
+						}
+					}*/
+
+					mZoneTextEdit->appendPlainText(QString("%1,%2").arg(AssetType.textValue(),QString(AppendableDirs.join("")+CurrentIndex.data().toString()))); //Gotta get loop working, appent strings etc ya know the usual stuff.
+					break;
+				}
 			}
 		}
 		parents << parents.last().parent();
