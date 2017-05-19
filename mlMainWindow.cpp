@@ -1719,15 +1719,12 @@ void mlMainWindow::InitZoneEditor()
 	mZoneTextEdit = new QPlainTextEdit();
 	QPushButton* ZoneSave = new QPushButton();
 	QPushButton* ZoneCancel = new QPushButton();	
-	QStringList AcceptableFileTypes;
-	AcceptableFileTypes << "*.gsc" << "*.csc" << "*.gsh";
 
 	mFileTree = new QTreeView();
 	mScriptList = new QFileSystemModel(this);
 
 	mScriptList->setFilter(QDir::AllDirs | QDir::NoDotAndDotDot | QDir::Files | QDir::NoSymLinks);
 
-	mScriptList->setNameFilters(AcceptableFileTypes);
 	mScriptList->setNameFilterDisables(false);
 
 	mScriptList->setRootPath(mToolsPath);
@@ -1776,61 +1773,51 @@ void mlMainWindow::InitZoneEditor()
 
 void mlMainWindow::OnItemSelected(const QItemSelection& Selected, const QItemSelection& Deselected)
 {
-	QModelIndex CurrentIndex = mFileTree->currentIndex();
-
-	QModelIndexList parents;
-	QStringList AppendableDirs;
-	parents << CurrentIndex;
-
-	while ( parents.last().isValid()) 
+	if(mScriptList->hasChildren(mFileTree->currentIndex()))
 	{
-		if(parents.last().parent().data().toString() == "raw")
-		{
-			//Implement endsWith() yadayadya stuffs. parent folder checking and finally inserting.
-			break;
-		}
-		else
-		{
-			QSettings Settings;
-			if(Settings.value("Expert_ZoneEditor", false).toBool() == false)
-			{
-				QMessageBox::critical(this,"Hold On!","I Don't Support Adding Files From Here!\nPlease Use The Raw Folder Or Enable Expert Mode In Settings.",QMessageBox::Ok);
-				break;
-			}
-			else
-			{
-
-				QInputDialog AssetType;
-				QStringList AssetList;
-				AssetList << "col_map" << "gfx_map" << "fx" << "scriptparsetree" << "rawfile" << "scriptbundle";
-				AssetType.setOption(QInputDialog::UseListViewForComboBoxItems);
-				AssetType.setWindowTitle(tr("Asset Type"));
-				AssetType.setLabelText(tr("What Is This?:"));
-				AssetType.setComboBoxItems(AssetList);
-				int Ret = AssetType.exec();
-
-				if (Ret != QDialog::Accepted)
-					break;
-
-				if(!AssetType.textValue().isEmpty())
-				{
-				/*	foreach(auto Parent, parents)
-					{
-						QString Last = Parent.data().toString();
-						if(Last != Parent.data().toString())
-						{
-							
-						AppendableDirs << Parent.data().toString();
-						}
-					}*/
-
-					mZoneTextEdit->appendPlainText(QString("%1,%2").arg(AssetType.textValue(),QString(AppendableDirs.join("")+CurrentIndex.data().toString()))); //Gotta get loop working, appent strings etc ya know the usual stuff.
-					break;
-				}
-			}
-		}
-		parents << parents.last().parent();
+		QMessageBox::information(this,"Hold Up!","I Can't Add folders! Please Select A File.",QMessageBox::Ok);
+		return;
 	}
+	
+	QModelIndexList ParentFolderList;
+	QStringList ParentFolderStringList;
+	ParentFolderList << mFileTree->currentIndex();
+
+	while (ParentFolderList.last().isValid() && ParentFolderList.last().parent().data().toString() != "raw") 
+	{
+		if(ParentFolderList.last().parent().data().toString() == "raw" || ParentFolderList.last().parent().data().toString() == "Call of Duty Black Ops III") //Don't Process If It's Out Of Raw, or how the hell did you get that far? Maybe I should prmopt them...?
+		{
+			QMessageBox::question(this,"Hold Up!","Hey! This File Isn't In Raw! Please Move It To Raw.",QMessageBox::No);
+			return;
+		}
+		ParentFolderList << ParentFolderList.last().parent();
+	}
+	foreach(const QModelIndex &CurrentIndex, ParentFolderList)
+	{
+		ParentFolderStringList << CurrentIndex.data(Qt::DisplayRole).toString();
+	}
+
+	std::reverse(ParentFolderStringList.begin(),ParentFolderStringList.end());
+	
+	QInputDialog AssetType;
+	QStringList AssetList;
+	AssetList << "col_map" << "gfx_map" << "fx" << "scriptparsetree" << "rawfile" << "scriptbundle";
+	AssetType.setOption(QInputDialog::UseListViewForComboBoxItems);
+	AssetType.setWindowTitle("Asset Type");
+	AssetType.setLabelText("What Is This?:");
+	AssetType.setComboBoxItems(AssetList);
+	int Ret = AssetType.exec();
+
+	if (Ret != QDialog::Accepted)
+		return;
+
+	if(!AssetType.textValue().isEmpty())
+	{
+	mZoneTextEdit->appendPlainText(QString("%1,%2").arg(AssetType.textValue(),ParentFolderStringList.join("/")));
+	mOutputWidget->appendPlainText("Done");
+	}
+
+	
 }
 
 void mlMainWindow::OnSaveZone()
