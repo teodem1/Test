@@ -1913,7 +1913,8 @@ void GDTCreatorGroupBox::dropEvent(QDropEvent* event)
 			QInputDialog GDTType;
 			QStringList GDTTypeList;
 			QString GDTTemplate;
-			
+			QString FileName;
+
 			GDTTypeList << "xmodel" << "image";
 			GDTType.setOption(QInputDialog::UseListViewForComboBoxItems);
 			GDTType.setWindowTitle("GDT Creation Type");
@@ -1927,6 +1928,19 @@ void GDTCreatorGroupBox::dropEvent(QDropEvent* event)
 			//This Doesn't Work, But Also Works....
 			if(!GDTType.textValue().isEmpty())
 			{
+				FileName = WorkingDir.left(WorkingDir.lastIndexOf('_'));
+				QInputDialog FileNameInput;
+				FileNameInput.setWindowTitle("File Name");
+				FileNameInput.setLabelText("What Should I Call The GDT?");
+				bool Res;
+				FileNameInput.getText(this,"File Name","What Should I Call The GDT?",QLineEdit::Normal,FileName, &Res);
+				
+				if(!Res)
+					return;
+
+				FileName= FileNameInput.textValue();
+
+
 				if(GDTType.textValue() == "xmodel" && QFileInfo(urlList.at(i).toLocalFile()).suffix() == "xmodel_bin")
 				{
 					GDTTemplate = 
@@ -1938,7 +1952,7 @@ void GDTCreatorGroupBox::dropEvent(QDropEvent* event)
 						"\t\t\"type\" \"rigid\"\n" +
 						"\t}\n" +
 						"}\n";
-					QFile xModelFile(QString("%1/%2.%3").arg(source_data_folder.absolutePath(),WorkingDir.left(WorkingDir.lastIndexOf('_')),".gdt"));
+					QFile xModelFile(QString("%1/%2.%3").arg(source_data_folder.absolutePath(),FileName,".gdt"));
 					if(xModelFile.open(QFile::ReadWrite))
 					{
 						QTextStream FileWriter(&xModelFile);
@@ -1952,12 +1966,8 @@ void GDTCreatorGroupBox::dropEvent(QDropEvent* event)
 						return;
 					}
 				}
-				else
-				{
-					QMessageBox::warning(this,"Uh-Oh!","I Can't Create An xModel GDT For This File Type.",QMessageBox::Ok);
-					return;
-				}
-				if (GDTType.textValue() == "image" && QFileInfo(urlList.at(i).toLocalFile()).suffix() == "tiff" && QFileInfo(urlList.at(i).toLocalFile()).suffix() == "tif")
+				
+				if (GDTType.textValue() == "image" && QFileInfo(urlList.at(i).toLocalFile()).suffix() == "tiff" || QFileInfo(urlList.at(i).toLocalFile()).suffix() == "tif")
 				{
 					GDTTemplate = 
 						"{\n" + 
@@ -1969,7 +1979,7 @@ void GDTCreatorGroupBox::dropEvent(QDropEvent* event)
 						"\t\t\"type\" \"image\"\n" +	
 						"\t}\n" +
 						"}\n";
-					QFile xModelFile(QString("%1/%2.%3").arg(source_data_folder.absolutePath(),WorkingDir.left(WorkingDir.lastIndexOf('_')),".gdt"));
+					QFile xModelFile(QString("%1/%2.%3").arg(source_data_folder.absolutePath(),FileName,".gdt"));
 					if(xModelFile.open(QFile::ReadWrite))
 					{
 						QTextStream FileWriter(&xModelFile);
@@ -1986,7 +1996,7 @@ void GDTCreatorGroupBox::dropEvent(QDropEvent* event)
 				}
 				else
 				{
-					QMessageBox::warning(this,"Uh-Oh!","I Can't Create An Image GDT For This File Type.",QMessageBox::Ok);
+					QMessageBox::warning(this,"Uh-Oh!","I Can't Create A GDT For This File Type.\nPlease make sure you're using xmodel_bin, tif or tiff.",QMessageBox::Ok);
 					return;
 				}
 				//Add Material Stuff.
