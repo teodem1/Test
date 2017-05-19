@@ -252,9 +252,6 @@ mlMainWindow::mlMainWindow()
 	mGamePath = QString(getenv("TA_GAME_PATH")).replace('\\', '/');
 	mToolsPath = QString(getenv("TA_TOOLS_PATH")).replace('\\', '/');
 
-
-	UpdateTheme();
-
 	setWindowIcon(QIcon(":/resources/ModLauncher.png"));
 	setWindowTitle("Black Ops III Mod Tools Launcher");
 
@@ -318,8 +315,7 @@ mlMainWindow::mlMainWindow()
 	mRunEnabledWidget = new QCheckBox("Run");
 	ActionsLayout->addWidget(mRunEnabledWidget);
 
-	mRunOptionsWidget = new QLineEdit();
-	mRunOptionsWidget->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+	mRunOptionsWidget = new QComboBox();
 	ActionsLayout->addWidget(mRunOptionsWidget);
 
 	mBuildButton = new QPushButton("Build");
@@ -359,9 +355,35 @@ mlMainWindow::mlMainWindow()
 	mTimer.start(1000);
 	SyntaxTimer.setSingleShot(true);
 	connect(&SyntaxTimer,SIGNAL(timeout()),this,SLOT(UpdateSyntax()));
+	
 	PopulateFileList();
 
-	mRunOptionsWidget->setPlaceholderText("Optional Run Args");
+	mRunOptionsWidget->addItem("-noWater");
+	mRunOptionsWidget->setItemData(0, "Ignores all water brushes", Qt::ToolTipRole);
+	
+	mRunOptionsWidget->addItem("-noCurves");
+	mRunOptionsWidget->setItemData(1,"Ignores all patch and terrain geometry",Qt::ToolTipRole);
+
+	mRunOptionsWidget->addItem("-noDetail");
+	mRunOptionsWidget->setItemData(2,"Ignores all detail brushes",Qt::ToolTipRole);
+
+	mRunOptionsWidget->addItem("-fullDetail");
+	mRunOptionsWidget->setItemData(3,"Turns all detail brushes into structural brushes",Qt::ToolTipRole);
+	
+	mRunOptionsWidget->addItem("-leakTest");
+	mRunOptionsWidget->setItemData(4,"Quits immediately if the map leaked",Qt::ToolTipRole);
+
+	mRunOptionsWidget->addItem("-ModelShadow");
+	mRunOptionsWidget->setItemData(5,"Allows model surfaces to cast shadows",Qt::ToolTipRole);
+	
+	mRunOptionsWidget->addItem("-NoModelShadow");
+	mRunOptionsWidget->setItemData(6,"Prevents model surfaces from casting shadows",Qt::ToolTipRole);
+
+	mRunOptionsWidget->setEditable(true);
+	mRunOptionsWidget->lineEdit()->setPlaceholderText("Compiler Args"); //Nothing, Hack So You Don't NEED To Supply An Optional Run Arg.
+	mRunOptionsWidget->setCurrentIndex(-1);
+
+	UpdateTheme();
 }
 
 mlMainWindow::~mlMainWindow()
@@ -921,8 +943,7 @@ void mlMainWindow::OnEditBuild()
 				AddUpdateDBCommand();
 
 				QStringList Args;
-				Args << "-platform" << "pc";
-
+				Args << "-platform" << "pc" << mRunOptionsWidget->currentText();
 				if (mCompileModeWidget->currentIndex() == 0)
 					Args << "-onlyents";
 				else
@@ -997,10 +1018,6 @@ void mlMainWindow::OnEditBuild()
 
 		if (!LastMap.isEmpty())
 			Args << "+devmap" << LastMap;
-
-		QString ExtraOptions = mRunOptionsWidget->text();
-		if (!ExtraOptions.isEmpty())
-			Args << ExtraOptions.split(' ');
 
 		Commands.append(QPair<QString, QStringList>(QString("%1/BlackOps3.exe").arg(mGamePath), Args));
 	}
@@ -1579,10 +1596,6 @@ void mlMainWindow::OnRunMapOrMod()
 		Args << ModName;
 	}
 
-	QString ExtraOptions = mRunOptionsWidget->text();
-	if (!ExtraOptions.isEmpty())
-		Args << ExtraOptions.split(' ');
-
 	QList<QPair<QString, QStringList>> Commands;
 	Commands.append(QPair<QString, QStringList>(QString("%1/BlackOps3.exe").arg(mGamePath), Args));
 	StartBuildThread(Commands);
@@ -1802,7 +1815,7 @@ void mlMainWindow::OnItemSelected(const QItemSelection& Selected, const QItemSel
 
 	QInputDialog AssetType;
 	QStringList AssetList;
-	AssetList << "col_map" << "gfx_map" << "fx" << "scriptparsetree" << "rawfile" << "scriptbundle";
+	AssetList << "col_map" << "gfx_map" << "fx" << "scriptparsetree" << "rawfile" << "scriptbundle" << "xmodel" << "xanim" << "material" << "weaponfile" << "sound";
 	AssetType.setOption(QInputDialog::UseListViewForComboBoxItems);
 	AssetType.setWindowTitle("Asset Type");
 	AssetType.setLabelText("What Is This?:");
@@ -2080,7 +2093,7 @@ Syntax::Syntax(QTextDocument *parent) : QSyntaxHighlighter(parent)
 
 	KeyWordFormat.setForeground(QColor("#63a058"));
 	QStringList Patterns;
-	Patterns << "scriptparsetree" << "rawfile" << "scriptbundle" << "xmodel" << "actor" << "material" << "col_map" << "gfx_map" << "sound"; //I Can't Find Docs On All, Would Be Nice To Get The Rest :).
+	Patterns << "col_map" << "gfx_map" << "fx" << "scriptparsetree" << "rawfile" << "scriptbundle" << "xmodel" << "xanim" << "material" << "weaponfile" << "sound"; //I Can't Find Docs On All, Would Be Nice To Get The Rest :).
 
 	foreach (const QString &Pattern, Patterns) {
 		CurrentRule.RegExPattern = QRegExp(Pattern);

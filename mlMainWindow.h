@@ -197,8 +197,8 @@ protected:
 
 	QComboBox* mCompileModeWidget;
 	QComboBox* mLightQualityWidget;
+	QComboBox* mRunOptionsWidget;
 
-	QLineEdit* mRunOptionsWidget;
 	QLineEdit* mExport2BinTargetDirWidget;
 	QLineEdit* mGDTCreateTargetDir;
 
