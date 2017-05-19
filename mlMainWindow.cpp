@@ -532,7 +532,7 @@ void mlMainWindow::InitGDTCreator()
 	dock->setWidget(widget);
 
 	GDTCreatorGroupBox* groupBox = new GDTCreatorGroupBox(dock, this);
-	gridLayout->addWidget(groupBox, 0, 0);
+	gridLayout->addWidget(groupBox, 0, 0,1,0);
 
 	QLabel* label = new QLabel("Drag Files Here", groupBox);
 	label->setAlignment(Qt::AlignCenter);
@@ -540,14 +540,17 @@ void mlMainWindow::InitGDTCreator()
 	groupBoxLayout->addWidget(label);
 	groupBox->setLayout(groupBoxLayout);
 
-	mOpenAPEAfterCreation = new QCheckBox("&Open APE After Creation", widget);
+	mOpenAPEAfterCreation = new QCheckBox("Open APE After Creation", widget);
+	mAutoCopyAssetsAfterGDTCreation = new QCheckBox("Copy Assets After Creation", widget); //Doesn't Need A Settings.
+	
 	gridLayout->addWidget(mOpenAPEAfterCreation, 1, 0);
+	gridLayout->addWidget(mAutoCopyAssetsAfterGDTCreation,1,1);
 
 	QSettings Settings;
 	mOpenAPEAfterCreation->setChecked(Settings.value("GDTCreate_OpenAPEAfterCreation", true).toBool());
 
 	connect(mOpenAPEAfterCreation, SIGNAL(clicked()), this, SLOT(OnOpenAPEAfterToggle()));
-	//Do things
+
 	groupBox->setAcceptDrops(true);
 
 	dock->resize(QSize(256, 256));
@@ -1485,19 +1488,18 @@ void mlMainWindow::OnOpenDocs()
 
 void mlMainWindow::OnSaveOutput()
 {
-	QFile* Output = new QFile("Console Output.txt");
+	QFile* Output = new QFile("Output.txt");
 	if(Output->open(QIODevice::WriteOnly | QIODevice::Text))
 	{
 		QTextStream Out(Output);
 		Out << (mOutputWidget->toPlainText());
 		Out.flush();
-		QMessageBox::information(this,"Saved Console Output","Saved Console Output To: Console Output.txt",QMessageBox::Ok);
+		QMessageBox::information(this,"Saved Console Output","Saved Console Output To: Output.txt",QMessageBox::Ok);
 	}
 	else
 	{
 		QMessageBox::warning(this,"Failed To Save Console Output!","Failed To Save!: "+Output->errorString(),QMessageBox::Ok);
 	}
-
 	Output->close();
 }
 
@@ -1680,7 +1682,6 @@ void mlMainWindow::OnOpenAPEAfterToggle()
 {
 	QSettings Settings;
 	Settings.setValue("GDTCreate_OpenAPEAfterCreation", mOpenAPEAfterCreation->isChecked());
-
 }
 
 void mlMainWindow::BuildOutputReady(QString Output)
@@ -1857,16 +1858,6 @@ void mlMainWindow::UpdateSyntax()
 	Syntax* highlighter = new Syntax(mZoneTextEdit->document());
 }
 
-GDTCreatorGroupBox::GDTCreatorGroupBox(QWidget* parent, mlMainWindow* parent_window) : QGroupBox(parent), parentWindow(parent_window)
-{
-	this->setAcceptDrops(true);
-}
-
-void GDTCreatorGroupBox::dragEnterEvent(QDragEnterEvent* event)
-{
-	event->acceptProposedAction();
-}
-
 void GDTCreatorGroupBox::dropEvent(QDropEvent* event)
 {
 	QDir source_data_folder(QString("%1/source_data").arg(parentWindow->mToolsPath));
@@ -1883,21 +1874,49 @@ void GDTCreatorGroupBox::dropEvent(QDropEvent* event)
 	{
 		QStringList pathList;
 		QList<QUrl> urlList = mimeData->urls();
-		QString CurrentFile;
-
 
 		for (int i = 0; i < urlList.size(); i++)
 		{	
-			CurrentFile = urlList.at(i).toLocalFile();
-			if(!CurrentFile.endsWith(".tiff") || !CurrentFile.endsWith(".tif"))
+			QStringList AllowedFileTypes;
+			AllowedFileTypes << "tiff" << "tif" << "xmodel_bin" << "xanim_bin";
+			QFileInfo Current =urlList.at(i).toLocalFile();
+
+			if(!AllowedFileTypes.contains(Current.suffix()))
 			{
 				QMessageBox::warning(this,"Incorrect Format!","Please Convert This File To Either XMODEL_BIN, XANIM_BIN, TIFF Or TIF",QMessageBox::Ok);
 				return;
+			}
+
+			if(Current.isDir())
+			{
+				QMessageBox::information(this,"Hold Up!","Sorry, I Don't Support Folders! Please Drag The Files Onto Me.",QMessageBox::Ok);
+				return;
+			}
+
+			if(parentWindow->mAutoCopyAssetsAfterGDTCreation->isChecked())
+			{
+				QString WorkingDir = QFileInfo(urlList.at(i).toLocalFile()).fileName().split(".",QString::SkipEmptyParts).at(0);
+
+				if(!QDir().exists(WorkingDir))
+					QDir().mkpath(QString("%1/%2").arg(model_export_folder.absolutePath(),WorkingDir)); //Make Path
+
+				QFile().copy(urlList.at(i).toLocalFile(),QString("%1/%2/%3").arg(model_export_folder.absolutePath(),WorkingDir,QFileInfo(urlList.at(i).toLocalFile()).fileName()));
 			}
 		}
 
 		event->acceptProposedAction();
 	}
+}
+
+
+GDTCreatorGroupBox::GDTCreatorGroupBox(QWidget* parent, mlMainWindow* parent_window) : QGroupBox(parent), parentWindow(parent_window)
+{
+	this->setAcceptDrops(true);
+}
+
+void GDTCreatorGroupBox::dragEnterEvent(QDragEnterEvent* event)
+{
+	event->acceptProposedAction();
 }
 
 void GDTCreatorGroupBox::dragLeaveEvent(QDragLeaveEvent* event)

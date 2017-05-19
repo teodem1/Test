@@ -193,6 +193,7 @@ protected:
 	QCheckBox* mExport2BinOverwriteWidget;
 	QCheckBox* mGDTCreateOverwriteWidget;
 	QCheckBox* mOpenAPEAfterCreation;
+	QCheckBox* mAutoCopyAssetsAfterGDTCreation;
 
 	QComboBox* mCompileModeWidget;
 	QComboBox* mLightQualityWidget;
