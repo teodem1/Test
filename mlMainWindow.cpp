@@ -1,4 +1,4 @@
-/*
+﻿/*
 *
 * Copyright 2016 Activision Publishing, Inc.
 *
@@ -542,7 +542,7 @@ void mlMainWindow::InitGDTCreator()
 
 	mOpenAPEAfterCreation = new QCheckBox("Open APE After Creation", widget);
 	mAutoCopyAssetsAfterGDTCreation = new QCheckBox("Copy Assets After Creation", widget); //Doesn't Need A Settings.
-	
+
 	gridLayout->addWidget(mOpenAPEAfterCreation, 1, 0);
 	gridLayout->addWidget(mAutoCopyAssetsAfterGDTCreation,1,1);
 
@@ -1779,7 +1779,7 @@ void mlMainWindow::OnItemSelected(const QItemSelection& Selected, const QItemSel
 		QMessageBox::information(this,"Hold Up!","I Can't Add folders! Please Select A File.",QMessageBox::Ok);
 		return;
 	}
-	
+
 	QModelIndexList ParentFolderList;
 	QStringList ParentFolderStringList;
 	ParentFolderList << mFileTree->currentIndex();
@@ -1799,7 +1799,7 @@ void mlMainWindow::OnItemSelected(const QItemSelection& Selected, const QItemSel
 	}
 
 	std::reverse(ParentFolderStringList.begin(),ParentFolderStringList.end());
-	
+
 	QInputDialog AssetType;
 	QStringList AssetList;
 	AssetList << "col_map" << "gfx_map" << "fx" << "scriptparsetree" << "rawfile" << "scriptbundle";
@@ -1814,11 +1814,11 @@ void mlMainWindow::OnItemSelected(const QItemSelection& Selected, const QItemSel
 
 	if(!AssetType.textValue().isEmpty())
 	{
-	mZoneTextEdit->appendPlainText(QString("%1,%2").arg(AssetType.textValue(),ParentFolderStringList.join("/")));
-	mOutputWidget->appendPlainText("Done");
+		mZoneTextEdit->appendPlainText(QString("%1,%2").arg(AssetType.textValue(),ParentFolderStringList.join("/")));
+		mOutputWidget->appendPlainText("Done");
 	}
 
-	
+
 }
 
 void mlMainWindow::OnSaveZone()
@@ -1878,31 +1878,123 @@ void GDTCreatorGroupBox::dropEvent(QDropEvent* event)
 		for (int i = 0; i < urlList.size(); i++)
 		{	
 			QStringList AllowedFileTypes;
-			AllowedFileTypes << "tiff" << "tif" << "xmodel_bin" << "xanim_bin";
+			AllowedFileTypes << "tiff" << "tif" << "xmodel_bin";
 			QFileInfo Current =urlList.at(i).toLocalFile();
 
 			if(!AllowedFileTypes.contains(Current.suffix()))
 			{
-				QMessageBox::warning(this,"Incorrect Format!","Please Convert This File To Either XMODEL_BIN, XANIM_BIN, TIFF Or TIF",QMessageBox::Ok);
+				QMessageBox::warning(this,"Incorrect Format!","Please Convert This File To Either XMODEL_BIN, TIFF Or TIF",QMessageBox::Ok);
 				return;
 			}
 
 			if(Current.isDir())
 			{
-				QMessageBox::information(this,"Hold Up!","Sorry, I Don't Support Folders! Please Drag The Files Onto Me.",QMessageBox::Ok);
+				QMessageBox::information(this,"Hold Up!","Sorry, I Don't Support Folders! Please Drag The Files Onto Me.",QMessageBox::Ok); //Iterate Through Them In A Later Release.
+				//I might need to refractor into a func so I can do this though ¯\_(ツ)_/¯
 				return;
 			}
 
+			QString WorkingDir = QFileInfo(urlList.at(i).toLocalFile()).fileName().split(".",QString::SkipEmptyParts).at(0);
+			QString Path;
 			if(parentWindow->mAutoCopyAssetsAfterGDTCreation->isChecked())
 			{
-				QString WorkingDir = QFileInfo(urlList.at(i).toLocalFile()).fileName().split(".",QString::SkipEmptyParts).at(0);
-
 				if(!QDir().exists(WorkingDir))
 					QDir().mkpath(QString("%1/%2").arg(model_export_folder.absolutePath(),WorkingDir)); //Make Path
 
 				QFile().copy(urlList.at(i).toLocalFile(),QString("%1/%2/%3").arg(model_export_folder.absolutePath(),WorkingDir,QFileInfo(urlList.at(i).toLocalFile()).fileName()));
+				Path = QString("%1/%2/%3").arg("model_export",WorkingDir,QFileInfo(urlList.at(i).toLocalFile()).fileName());
+			}
+			else
+			{
+				Path = urlList.at(i).toLocalFile();
+			}
+
+			//Create GDT Now.
+			QInputDialog GDTType;
+			QStringList GDTTypeList;
+			QString GDTTemplate;
+			
+			GDTTypeList << "xmodel" << "image";
+			GDTType.setOption(QInputDialog::UseListViewForComboBoxItems);
+			GDTType.setWindowTitle("GDT Creation Type");
+			GDTType.setLabelText(QString("What Type Of GDT Should I Create?\nAsset: %1").arg(QFileInfo(urlList.at(i).toLocalFile()).fileName()));
+			GDTType.setComboBoxItems(GDTTypeList);
+			int Ret = GDTType.exec();
+
+			if (Ret != QDialog::Accepted)
+				return;
+
+			//This Doesn't Work, But Also Works....
+			if(!GDTType.textValue().isEmpty())
+			{
+				if(GDTType.textValue() == "xmodel" && QFileInfo(urlList.at(i).toLocalFile()).suffix() == "xmodel_bin")
+				{
+					GDTTemplate = 
+						"{\n" +
+						QString("\t\"%1\" ( \"xmodel.gdf\" )\n").arg(WorkingDir.left(WorkingDir.lastIndexOf('_'))) +
+						"\t{\n" +
+						"\t\t\"filename\" \"" + Path + "\"\n" +
+						"\t\t\"highLodDist\" \"751\"\n" + 
+						"\t\t\"type\" \"rigid\"\n" +
+						"\t}\n" +
+						"}\n";
+					QFile xModelFile(QString("%1/%2.%3").arg(source_data_folder.absolutePath(),WorkingDir.left(WorkingDir.lastIndexOf('_')),".gdt"));
+					if(xModelFile.open(QFile::ReadWrite))
+					{
+						QTextStream FileWriter(&xModelFile);
+						FileWriter << GDTTemplate;
+						FileWriter.flush();
+						xModelFile.close();
+					}
+					else
+					{
+						QMessageBox::critical(this,"Uh-Oh!","I Couldn't Open The File For Saving",QMessageBox::Ok);
+						return;
+					}
+				}
+				else
+				{
+					QMessageBox::warning(this,"Uh-Oh!","I Can't Create An xModel GDT For This File Type.",QMessageBox::Ok);
+					return;
+				}
+				if (GDTType.textValue() == "image" && QFileInfo(urlList.at(i).toLocalFile()).suffix() == "tiff" && QFileInfo(urlList.at(i).toLocalFile()).suffix() == "tif")
+				{
+					GDTTemplate = 
+						"{\n" + 
+						QString("\t\"%1\" ( \"image.gdf\" )\n").arg(WorkingDir.left(WorkingDir.lastIndexOf('_'))) +
+						"\t{\n" +
+						"\t\t\"baseImage\" \"" + Path +"\"\n" +
+						"\t\t\"semantic\" \"diffuseMap\"\n" +
+						"\t\t\"imageType\" \"Texture\"\n" +
+						"\t\t\"type\" \"image\"\n" +	
+						"\t}\n" +
+						"}\n";
+					QFile xModelFile(QString("%1/%2.%3").arg(source_data_folder.absolutePath(),WorkingDir.left(WorkingDir.lastIndexOf('_')),".gdt"));
+					if(xModelFile.open(QFile::ReadWrite))
+					{
+						QTextStream FileWriter(&xModelFile);
+						FileWriter << GDTTemplate;
+						FileWriter.flush();
+						xModelFile.close();
+					}
+					else
+					{
+						QMessageBox::critical(this,"Uh-Oh!","I Couldn't Open The File For Saving",QMessageBox::Ok);
+						return;
+					}
+
+				}
+				else
+				{
+					QMessageBox::warning(this,"Uh-Oh!","I Can't Create An Image GDT For This File Type.",QMessageBox::Ok);
+					return;
+				}
+				//Add Material Stuff.
 			}
 		}
+
+		if(parentWindow->mOpenAPEAfterCreation->isChecked())
+			parentWindow->mActionFileAssetEditor->trigger();
 
 		event->acceptProposedAction();
 	}
