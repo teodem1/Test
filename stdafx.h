@@ -22,6 +22,7 @@
 #include "steam_api.h"
 
 #include "dvar.h"
+#include "cod2map.h"
 
 class mlMainWindow;
 class mlExport2BinWidget;

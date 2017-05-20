@@ -55,6 +55,9 @@
     <ClCompile Include="dvar.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="cod2map.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="ModLauncher.rc">
@@ -77,6 +80,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="dvar.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="cod2map.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

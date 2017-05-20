@@ -40,6 +40,54 @@ dvar_s gDvars[] = {
 	{"splitscreen_playerCount", "Allocate the number of instances for splitscreen", DVAR_VALUE_INT, 0, 2},
 	{"devmap","Launch to this map using devmap",DVAR_VALUE_COMBO,0,0,true},
 };
+
+COD2MAPArg_s gCod2MapArgs[] = {
+	{ "-platform", "Required if not copying a bsp between platforms; specifies target platform",ARG_VALUE_NEEDS_VALUE},
+	{ "-pcToXenon","Copies a PC bsp to a Xenon bsp", ARG_VALUE_SET },
+	{ "-xenonToPc","Copies a Xenon bsp to a PC bsp", ARG_VALUE_SET },
+	{"-v","Verbose; enables extra compilation messages", ARG_VALUE_SET },
+	{"-verboseEntities","Includes verbose messages for submodels if '-v' is given", ARG_VALUE_SET },
+	{"-onlyEnts","Compile doesn't touch triggers, geometry, or lighting", ARG_VALUE_SET },
+	{ "-generateMapEntsFile","Generate map entity string file only, ignore reference prefabs", ARG_VALUE_SET },
+	{"-blockSize","Grid size for regular BSP splits; 0 uses largest possible", ARG_VALUE_NEEDS_VALUE,0,64,true },
+	{"-subdivisions","Divides all geometry on a grid; only works for small maps", ARG_VALUE_SET },
+	{"-noSubdivide","Ignores the 'tessSize' setting in all materials", ARG_VALUE_SET },
+	{ "-staticModelCollMaps","(Legacy support) Use collmaps for static models", ARG_VALUE_SET},
+	{"-displayCollMapWarnings","Display missing collmap warnings", ARG_VALUE_SET},
+	{"-ignoreModelErrors","Don't error on missing models, just allow them to drop out", ARG_VALUE_SET },
+	{"-smoothAngle","Smooth surfaces are only smoothed at angles less than this", ARG_VALUE_SET },
+	{ "-loadFrom","Reads this map instead, but still writes to <mapfile>", ARG_VALUE_NEEDS_VALUE,NULL,NULL,true },
+	{"-noCurves","Ignores all patch and terrain geometry", ARG_VALUE_SET },
+	{"-noDetail","Ignores all detail brushes", ARG_VALUE_SET},
+	{"-fullDetail","Turns all detail brushes into structural brushes", ARG_VALUE_SET},
+	{ "-leakTest","Quits immediately if the map leaked",ARG_VALUE_SET},
+	{"-portalTest","Forces all portal errors to be fatal",ARG_VALUE_SET},
+	{"-brushMethod","Brush optimization method (players/bullets/all/none)",ARG_VALUE_NEEDS_VALUE,NULL,NULL,true },
+	{"-expandPlayer","Writes a map for Radiant to see player-to-brush collision",ARG_VALUE_SET},
+	{"-expandBullet","Writes a map for Radiant to see bullet-to-brush collision",ARG_VALUE_SET},
+	{"-debugPortals","Writes a _portals.map showing portal/structural geometry",ARG_VALUE_SET},
+	{"-noReorderTris","Disables reordering of optimized triangles for T&L cache",ARG_VALUE_SET},
+	{"-listSlowEntities","Lists entities that process in more than this many seconds",ARG_VALUE_NEEDS_VALUE,0,120,true },
+	{"-warnLayerUses","Generates warnings for layer combos used this many or fewer times",ARG_VALUE_NEEDS_VALUE,0,120,true },
+	{"-warnLayerArea","Generates warnings for layer combos used less than this many square inches",ARG_VALUE_NEEDS_VALUE,0,120,true },
+	{"-navmesh","Generates the Havok Navigation Mesh during compile",ARG_VALUE_SET},
+	{"-navvolume","Generates the Havok Navigation Volume during compile. Must be generated together with the NavMesh.",ARG_VALUE_SET},
+	{"-hkdmp","Creates .hkdmp file of navmesh and navvolume to help diagnose generatio problems.",ARG_VALUE_SET},
+	{"-pruneNavMesh","Remove unused navmesh faces that don't exist inside any navmesh triggers.",ARG_VALUE_SET},
+	{"-umbraNumThreads","Sets the number of CPU threads Umbra will use when creating tome",ARG_VALUE_NEEDS_VALUE,1,QThread::idealThreadCount(),true },
+	{"-umbraSmallestOccluder","Surfaces smaller than this value will not be used as occluders",ARG_VALUE_NEEDS_VALUE,0,120,true },
+	{"-umbraSmallestHole","Geometry gaps smaller than this value are considered solid",ARG_VALUE_NEEDS_VALUE,0,120,true },
+	{"-umbraTileSize","Umbra data block size - smaller values will create larger tomes",ARG_VALUE_NEEDS_VALUE,0,120,true },
+	{"-umbraBackfaceLimit","Reverse percentage of backfaces tested to remove bad detail",ARG_VALUE_NEEDS_VALUE,0,120,true },
+	{"-umbraObjectGroupCost","Groups surfaces together.  Will improve in-game speed but degrades occlusion",ARG_VALUE_SET},
+	{"-umbraEnableSndbs","Enable use of SNDBS to accelerate Umbra compile",ARG_VALUE_SET},
+	{"-useUnstable","Use unstable shaders & techsetdefs",ARG_VALUE_SET},
+	{"-spawnTest","Quits immediately if the map has spawn points which intersect with level geop",ARG_VALUE_SET},
+	{"-timing","Enable prints for timing and instrumentation",ARG_VALUE_SET},
+	{"-prefabInstancing","Prefab instancing behavior [default|always|never]",ARG_VALUE_NEEDS_VALUE,NULL,NULL,true },
+	{"-noCoalesceCoincidentWindings","Turn off coalescing of coincident/coplanar surfaces",ARG_VALUE_SET}
+};
+
 enum mlItemType
 {
 	ML_ITEM_UNKNOWN,
@@ -315,8 +363,9 @@ mlMainWindow::mlMainWindow()
 	mRunEnabledWidget = new QCheckBox("Run");
 	ActionsLayout->addWidget(mRunEnabledWidget);
 
-	mRunOptionsWidget = new QComboBox();
-	ActionsLayout->addWidget(mRunOptionsWidget);
+	mCOD2MAPOptionsButton = new QPushButton("More Args");
+	connect(mCOD2MAPOptionsButton,SIGNAL(clicked()),this,SLOT(OnEditCOD2MAPArgs()));
+	ActionsLayout->addWidget(mCOD2MAPOptionsButton);
 
 	mBuildButton = new QPushButton("Build");
 	connect(mBuildButton, SIGNAL(clicked()), mActionEditBuild, SLOT(trigger()));
@@ -355,33 +404,8 @@ mlMainWindow::mlMainWindow()
 	mTimer.start(1000);
 	SyntaxTimer.setSingleShot(true);
 	connect(&SyntaxTimer,SIGNAL(timeout()),this,SLOT(UpdateSyntax()));
-	
+
 	PopulateFileList();
-
-	mRunOptionsWidget->addItem("-noWater");
-	mRunOptionsWidget->setItemData(0, "Ignores all water brushes", Qt::ToolTipRole);
-	
-	mRunOptionsWidget->addItem("-noCurves");
-	mRunOptionsWidget->setItemData(1,"Ignores all patch and terrain geometry",Qt::ToolTipRole);
-
-	mRunOptionsWidget->addItem("-noDetail");
-	mRunOptionsWidget->setItemData(2,"Ignores all detail brushes",Qt::ToolTipRole);
-
-	mRunOptionsWidget->addItem("-fullDetail");
-	mRunOptionsWidget->setItemData(3,"Turns all detail brushes into structural brushes",Qt::ToolTipRole);
-	
-	mRunOptionsWidget->addItem("-leakTest");
-	mRunOptionsWidget->setItemData(4,"Quits immediately if the map leaked",Qt::ToolTipRole);
-
-	mRunOptionsWidget->addItem("-ModelShadow");
-	mRunOptionsWidget->setItemData(5,"Allows model surfaces to cast shadows",Qt::ToolTipRole);
-	
-	mRunOptionsWidget->addItem("-NoModelShadow");
-	mRunOptionsWidget->setItemData(6,"Prevents model surfaces from casting shadows",Qt::ToolTipRole);
-
-	mRunOptionsWidget->setEditable(true);
-	mRunOptionsWidget->lineEdit()->setPlaceholderText("Compiler Args"); //Nothing, Hack So You Don't NEED To Supply An Optional Run Arg.
-	mRunOptionsWidget->setCurrentIndex(-1);
 
 	UpdateTheme();
 }
@@ -943,7 +967,7 @@ void mlMainWindow::OnEditBuild()
 				AddUpdateDBCommand();
 
 				QStringList Args;
-				Args << "-platform" << "pc" << mRunOptionsWidget->currentText();
+				Args << "-platform" << "pc";
 				if (mCompileModeWidget->currentIndex() == 0)
 					Args << "-onlyents";
 				else
@@ -1304,6 +1328,76 @@ void mlMainWindow::UpdateTheme()
 	}
 }
 
+void mlMainWindow::OnEditCOD2MAPArgs()
+{
+	QDialog Dialog(this,Qt::WindowTitleHint | Qt::WindowSystemMenuHint | Qt::WindowCloseButtonHint);
+	Dialog.setWindowTitle("COD2MAP Arguments");
+
+	QVBoxLayout* Layout = new QVBoxLayout(&Dialog);
+
+	QLabel* Label = new QLabel("These arguments are experimental and will let you tweak what will be parsed to cod2map",&Dialog);
+
+	QTreeWidget* SettingsTree = new QTreeWidget(&Dialog);
+	SettingsTree->setColumnCount(2);
+	SettingsTree->header()->setSectionResizeMode(0,QHeaderView::ResizeToContents);
+	SettingsTree->setHeaderLabels(QStringList() << "Setting" << "Value");
+	SettingsTree->setUniformRowHeights(true);
+	SettingsTree->setRootIsDecorated(false);
+
+	QDialogButtonBox* ButtonBox = new QDialogButtonBox(&Dialog);
+	ButtonBox->setOrientation(Qt::Horizontal);
+	ButtonBox->setStandardButtons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+	ButtonBox->setCenterButtons(true);
+
+
+	Layout->addWidget(Label);
+	Layout->addWidget(SettingsTree);
+	Layout->addWidget(ButtonBox);
+
+		for(int SettingIndx = 0; SettingIndx < ARRAYSIZE(gCod2MapArgs); SettingIndx++)
+			COD2MAP(gCod2MapArgs[SettingIndx], SettingsTree);
+
+	connect(ButtonBox, SIGNAL(accepted()), &Dialog, SLOT(accept()));
+	connect(ButtonBox, SIGNAL(rejected()), &Dialog, SLOT(reject()));
+
+	if (Dialog.exec() != QDialog::Accepted)
+		return;
+
+	int size = 0;
+	QSettings settings;
+	QString SettingName, SettingValue;
+	QTreeWidgetItemIterator it(SettingsTree);
+
+	mCod2MapArgs.clear();
+	while (*it && size < ARRAYSIZE(gDvars))
+	{
+		QWidget* Widget = SettingsTree->itemWidget(*it, 1);
+		SettingName = (*it)->data(0, 0).toString();
+		COD2MAPArg_s Setting = COD2MAP::findSetting(SettingName, SettingsTree, gCod2MapArgs, ARRAYSIZE(gCod2MapArgs));
+		switch(Setting.type)
+		{
+		case ARG_VALUE_NEEDS_VALUE:
+			SettingValue = COD2MAP::setCOD2MAPSetting(Setting, (QLineEdit*)Widget);
+			break;
+		case ARG_VALUE_SET:
+			SettingValue = COD2MAP::setCOD2MAPSetting(Setting,(QCheckBox*)Widget);
+		}
+
+		if(!SettingValue.toLatin1().isEmpty())
+		{
+			if(!Setting.isSettable)
+				mRunDvars << "+set" << SettingName;
+			else			// hack for cmds
+				mRunDvars << QString("+%1").arg(SettingName);
+
+			mRunDvars << SettingValue;
+		}
+		size++;
+		++it;
+	}
+}
+
+
 void mlMainWindow::OnEditDvars()
 {
 	QDialog Dialog(this, Qt::WindowTitleHint | Qt::WindowSystemMenuHint | Qt::WindowCloseButtonHint);
@@ -1378,8 +1472,6 @@ void mlMainWindow::OnEditDvars()
 		size++;
 		++it;
 	}
-
-
 }
 
 void mlMainWindow::UpdateWorkshopItem()
@@ -1947,7 +2039,7 @@ void GDTCreatorGroupBox::dropEvent(QDropEvent* event)
 				FileNameInput.setLabelText("What Should I Call The GDT?");
 				bool Res;
 				FileNameInput.getText(this,"File Name","What Should I Call The GDT?",QLineEdit::Normal,FileName, &Res);
-				
+
 				if(!Res)
 					return;
 
@@ -1979,7 +2071,7 @@ void GDTCreatorGroupBox::dropEvent(QDropEvent* event)
 						return;
 					}
 				}
-				
+
 				if (GDTType.textValue() == "image" && QFileInfo(urlList.at(i).toLocalFile()).suffix() == "tiff" || QFileInfo(urlList.at(i).toLocalFile()).suffix() == "tif")
 				{
 					GDTTemplate = 

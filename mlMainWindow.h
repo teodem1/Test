@@ -107,6 +107,7 @@ protected slots:
 	void OnEditPublish();
 	void OnEditOptions();
 	void OnEditDvars();
+	void OnEditCOD2MAPArgs();
 	void OnOpenDocs();
 	void OnHelpAbout();
 	void OnSaveOutput();
@@ -149,6 +150,9 @@ protected:
 	void InitExport2BinGUI();
 	void InitZoneEditor();
 	void InitGDTCreator();
+	
+	void InitCod2MapArgs();
+	//void InitLinkerArgs(); Need Docs On This So I can add tool-tips.
 
 	bool mTreyarchTheme;
 	bool mUseBuiltInEditor;
@@ -184,6 +188,7 @@ protected:
 	QPushButton* mBuildButton;
 	QPushButton* mDvarsButton;
 	QPushButton* mConvertButton;
+	QPushButton* mCOD2MAPOptionsButton;
 
 	QCheckBox* mCompileEnabledWidget;
 	QCheckBox* mLightEnabledWidget;
@@ -197,7 +202,6 @@ protected:
 
 	QComboBox* mCompileModeWidget;
 	QComboBox* mLightQualityWidget;
-	QComboBox* mRunOptionsWidget;
 
 	QLineEdit* mExport2BinTargetDirWidget;
 	QLineEdit* mGDTCreateTargetDir;
@@ -223,6 +227,7 @@ protected:
 
 	QStringList mTags;
 	QStringList mRunDvars;
+	QStringList mCod2MapArgs;
 
 	QTimer mTimer;
 	QTimer SyntaxTimer;
