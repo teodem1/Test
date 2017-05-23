@@ -62,7 +62,7 @@ COD2MAPArg_s gCod2MapArgs[] = {
 	{"-fullDetail","Turns all detail brushes into structural brushes", ARG_VALUE_SET},
 	{ "-leakTest","Quits immediately if the map leaked",ARG_VALUE_SET},
 	{"-portalTest","Forces all portal errors to be fatal",ARG_VALUE_SET},
-	{"-brushMethod","Brush optimization method (players/bullets/all/none)",ARG_VALUE_NEEDS_COMBO,NULL,NULL,true },
+	{"-brushMethod","Brush optimization method (players/bullets/all/none)",ARG_VALUE_NEEDS_COMBO,NULL,NULL,true, QStringList() << "" << "players" << "bullets" << "all" << "none" },
 	{"-expandPlayer","Writes a map for Radiant to see player-to-brush collision",ARG_VALUE_SET},
 	{"-expandBullet","Writes a map for Radiant to see bullet-to-brush collision",ARG_VALUE_SET},
 	{"-debugPortals","Writes a _portals.map showing portal/structural geometry",ARG_VALUE_SET},
@@ -84,7 +84,7 @@ COD2MAPArg_s gCod2MapArgs[] = {
 	{"-useUnstable","Use unstable shaders & techsetdefs",ARG_VALUE_SET},
 	{"-spawnTest","Quits immediately if the map has spawn points which intersect with level geop",ARG_VALUE_SET},
 	{"-timing","Enable prints for timing and instrumentation",ARG_VALUE_SET},
-	{"-prefabInstancing","Prefab instancing behavior [default|always|never]",ARG_VALUE_NEEDS_COMBO,NULL,NULL,true },
+	{"-prefabInstancing","Prefab instancing behavior [default|always|never]",ARG_VALUE_NEEDS_COMBO,NULL,NULL,true, QStringList() << "" << "default" <<"always" << "never" },
 	{"-noCoalesceCoincidentWindings","Turn off coalescing of coincident/coplanar surfaces",ARG_VALUE_SET}
 };
 

@@ -16,6 +16,7 @@ struct COD2MAPArg_s
 	int minValue;
 	int maxValue;
 	bool isSettable;//Is Settable, Needs No Value. E.G. -
+	QStringList DataCollection; //Over Kill? Probably. Bad Practice? Most Defiantly. Do I Care? You bet not.
 };
 
 class COD2MAP

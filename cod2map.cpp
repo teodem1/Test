@@ -24,6 +24,7 @@ COD2MAP::COD2MAP(COD2MAPArg_s Argument, QTreeWidget* ArgumentTree)
 		break;
 	case ARG_VALUE_NEEDS_COMBO:
 		comboBox = new QComboBox();
+		comboBox->addItems(Argument.DataCollection);
 		comboBox->setToolTip(QString("String value, leave this blank for it to not be used."));
 		comboBox->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
 		ArgumentTree->setItemWidget(Item, 1, comboBox);
@@ -38,10 +39,9 @@ COD2MAP::COD2MAP(COD2MAPArg_s Argument, QTreeWidget* ArgumentTree)
 		break;
 	case ARG_VALUE_NEEDS_STRING:
 		lineEdit = new QLineEdit();
-		spinBox->setToolTip(QString("String value, leave this blank for it to not be used."));
-		spinBox->setSizePolicy(QSizePolicy::Minimum,QSizePolicy::Minimum);
+		lineEdit->setToolTip(QString("String value, leave this blank for it to not be used."));
+		lineEdit->setSizePolicy(QSizePolicy::Minimum,QSizePolicy::Minimum);
 		ArgumentTree->setItemWidget(Item,1,lineEdit);
-		break;
 		break;
 	}
 }
