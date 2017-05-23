@@ -3,8 +3,9 @@
 enum COD2MAPArgType
 {
 	ARG_VALUE_SET, // Just Needs To Be Set.
-	ARG_VALUE_NEEDS_INT_TEXT, //Needs User INT Input.
-	ARG_VALUE_NEEDS_COMBO_TEXT //Needs User To Choose Strig From List.
+	ARG_VALUE_NEEDS_INT, //Needs User INT Input.
+	ARG_VALUE_NEEDS_COMBO, //Needs User To Choose Strig From List.
+	ARG_VALUE_NEEDS_STRING //Needs String
 };
 
 struct COD2MAPArg_s

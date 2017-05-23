@@ -42,49 +42,49 @@ dvar_s gDvars[] = {
 };
 
 COD2MAPArg_s gCod2MapArgs[] = {
-	{ "-platform", "Required if not copying a bsp between platforms; specifies target platform",ARG_VALUE_NEEDS_VALUE},
-	{ "-pcToXenon","Copies a PC bsp to a Xenon bsp", ARG_VALUE_SET },
-	{ "-xenonToPc","Copies a Xenon bsp to a PC bsp", ARG_VALUE_SET },
-	{"-v","Verbose; enables extra compilation messages", ARG_VALUE_SET },
+	{ "-platform", "Required if not copying a bsp between platforms; specifies target platform",ARG_VALUE_NEEDS_STRING, NULL,NULL,true},
+	{ "-pcToXenon","Copies a PC bsp to a Xenon bsp", ARG_VALUE_SET, NULL,NULL,true},
+	{ "-xenonToPc","Copies a Xenon bsp to a PC bsp", ARG_VALUE_SET, NULL,NULL,true },
+	{"-v","Verbose; enables extra compilation messages", ARG_VALUE_SET,NULL,NULL,true },
 	{"-verboseEntities","Includes verbose messages for submodels if '-v' is given", ARG_VALUE_SET },
 	{"-onlyEnts","Compile doesn't touch triggers, geometry, or lighting", ARG_VALUE_SET },
 	{ "-generateMapEntsFile","Generate map entity string file only, ignore reference prefabs", ARG_VALUE_SET },
-	{"-blockSize","Grid size for regular BSP splits; 0 uses largest possible", ARG_VALUE_NEEDS_VALUE,0,64,true },
+	{"-blockSize","Grid size for regular BSP splits; 0 uses largest possible", ARG_VALUE_NEEDS_INT,0,64,true },
 	{"-subdivisions","Divides all geometry on a grid; only works for small maps", ARG_VALUE_SET },
 	{"-noSubdivide","Ignores the 'tessSize' setting in all materials", ARG_VALUE_SET },
 	{ "-staticModelCollMaps","(Legacy support) Use collmaps for static models", ARG_VALUE_SET},
 	{"-displayCollMapWarnings","Display missing collmap warnings", ARG_VALUE_SET},
 	{"-ignoreModelErrors","Don't error on missing models, just allow them to drop out", ARG_VALUE_SET },
 	{"-smoothAngle","Smooth surfaces are only smoothed at angles less than this", ARG_VALUE_SET },
-	{ "-loadFrom","Reads this map instead, but still writes to <mapfile>", ARG_VALUE_NEEDS_VALUE,NULL,NULL,true },
+	{ "-loadFrom","Reads this map instead, but still writes to <mapfile>", ARG_VALUE_NEEDS_STRING,NULL,NULL,true },
 	{"-noCurves","Ignores all patch and terrain geometry", ARG_VALUE_SET },
 	{"-noDetail","Ignores all detail brushes", ARG_VALUE_SET},
 	{"-fullDetail","Turns all detail brushes into structural brushes", ARG_VALUE_SET},
 	{ "-leakTest","Quits immediately if the map leaked",ARG_VALUE_SET},
 	{"-portalTest","Forces all portal errors to be fatal",ARG_VALUE_SET},
-	{"-brushMethod","Brush optimization method (players/bullets/all/none)",ARG_VALUE_NEEDS_VALUE,NULL,NULL,true },
+	{"-brushMethod","Brush optimization method (players/bullets/all/none)",ARG_VALUE_NEEDS_COMBO,NULL,NULL,true },
 	{"-expandPlayer","Writes a map for Radiant to see player-to-brush collision",ARG_VALUE_SET},
 	{"-expandBullet","Writes a map for Radiant to see bullet-to-brush collision",ARG_VALUE_SET},
 	{"-debugPortals","Writes a _portals.map showing portal/structural geometry",ARG_VALUE_SET},
 	{"-noReorderTris","Disables reordering of optimized triangles for T&L cache",ARG_VALUE_SET},
-	{"-listSlowEntities","Lists entities that process in more than this many seconds",ARG_VALUE_NEEDS_VALUE,0,120,true },
-	{"-warnLayerUses","Generates warnings for layer combos used this many or fewer times",ARG_VALUE_NEEDS_VALUE,0,120,true },
-	{"-warnLayerArea","Generates warnings for layer combos used less than this many square inches",ARG_VALUE_NEEDS_VALUE,0,120,true },
+	{"-listSlowEntities","Lists entities that process in more than this many seconds",ARG_VALUE_NEEDS_INT,0,120,true },
+	{"-warnLayerUses","Generates warnings for layer combos used this many or fewer times",ARG_VALUE_NEEDS_INT,0,120,true },
+	{"-warnLayerArea","Generates warnings for layer combos used less than this many square inches",ARG_VALUE_NEEDS_INT,0,120,true },
 	{"-navmesh","Generates the Havok Navigation Mesh during compile",ARG_VALUE_SET},
 	{"-navvolume","Generates the Havok Navigation Volume during compile. Must be generated together with the NavMesh.",ARG_VALUE_SET},
 	{"-hkdmp","Creates .hkdmp file of navmesh and navvolume to help diagnose generatio problems.",ARG_VALUE_SET},
 	{"-pruneNavMesh","Remove unused navmesh faces that don't exist inside any navmesh triggers.",ARG_VALUE_SET},
-	{"-umbraNumThreads","Sets the number of CPU threads Umbra will use when creating tome",ARG_VALUE_NEEDS_VALUE,1,QThread::idealThreadCount(),true },
-	{"-umbraSmallestOccluder","Surfaces smaller than this value will not be used as occluders",ARG_VALUE_NEEDS_VALUE,0,120,true },
-	{"-umbraSmallestHole","Geometry gaps smaller than this value are considered solid",ARG_VALUE_NEEDS_VALUE,0,120,true },
-	{"-umbraTileSize","Umbra data block size - smaller values will create larger tomes",ARG_VALUE_NEEDS_VALUE,0,120,true },
-	{"-umbraBackfaceLimit","Reverse percentage of backfaces tested to remove bad detail",ARG_VALUE_NEEDS_VALUE,0,120,true },
+	{"-umbraNumThreads","Sets the number of CPU threads Umbra will use when creating tome",ARG_VALUE_NEEDS_INT,1,QThread::idealThreadCount(),true },
+	{"-umbraSmallestOccluder","Surfaces smaller than this value will not be used as occluders",ARG_VALUE_NEEDS_INT,0,120,true },
+	{"-umbraSmallestHole","Geometry gaps smaller than this value are considered solid",ARG_VALUE_NEEDS_INT,0,120,true },
+	{"-umbraTileSize","Umbra data block size - smaller values will create larger tomes",ARG_VALUE_NEEDS_INT,0,120,true },
+	{"-umbraBackfaceLimit","Reverse percentage of backfaces tested to remove bad detail",ARG_VALUE_NEEDS_INT,0,120,true },
 	{"-umbraObjectGroupCost","Groups surfaces together.  Will improve in-game speed but degrades occlusion",ARG_VALUE_SET},
 	{"-umbraEnableSndbs","Enable use of SNDBS to accelerate Umbra compile",ARG_VALUE_SET},
 	{"-useUnstable","Use unstable shaders & techsetdefs",ARG_VALUE_SET},
 	{"-spawnTest","Quits immediately if the map has spawn points which intersect with level geop",ARG_VALUE_SET},
 	{"-timing","Enable prints for timing and instrumentation",ARG_VALUE_SET},
-	{"-prefabInstancing","Prefab instancing behavior [default|always|never]",ARG_VALUE_NEEDS_VALUE,NULL,NULL,true },
+	{"-prefabInstancing","Prefab instancing behavior [default|always|never]",ARG_VALUE_NEEDS_COMBO,NULL,NULL,true },
 	{"-noCoalesceCoincidentWindings","Turn off coalescing of coincident/coplanar surfaces",ARG_VALUE_SET}
 };
 
@@ -1376,7 +1376,7 @@ void mlMainWindow::OnEditCOD2MAPArgs()
 		COD2MAPArg_s Setting = COD2MAP::findSetting(SettingName, SettingsTree, gCod2MapArgs, ARRAYSIZE(gCod2MapArgs));
 		switch(Setting.type)
 		{
-		case ARG_VALUE_NEEDS_VALUE:
+		case ARG_VALUE_NEEDS_STRING:
 			SettingValue = COD2MAP::setCOD2MAPSetting(Setting, (QLineEdit*)Widget);
 			break;
 		case ARG_VALUE_SET:

@@ -10,8 +10,9 @@ COD2MAP::COD2MAP(COD2MAPArg_s Argument, QTreeWidget* ArgumentTree)
 	Item->setToolTip(0, Argument.description);
 
 	QCheckBox* checkBox;
-	QSpinBox* spinBox;
+	QLineEdit* lineEdit;
 	QComboBox* comboBox;
+	QSpinBox* spinBox;
 
 	switch(Argument.type)
 	{
@@ -21,11 +22,26 @@ COD2MAP::COD2MAP(COD2MAPArg_s Argument, QTreeWidget* ArgumentTree)
 		checkBox->setToolTip("Boolean value, check to enable or uncheck to disable.");
 		ArgumentTree->setItemWidget(Item, 1, checkBox);
 		break;
-	case ARG_VALUE_NEEDS_COMBO_TEXT:
+	case ARG_VALUE_NEEDS_COMBO:
 		comboBox = new QComboBox();
 		comboBox->setToolTip(QString("String value, leave this blank for it to not be used."));
 		comboBox->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
 		ArgumentTree->setItemWidget(Item, 1, comboBox);
+		break;
+	case ARG_VALUE_NEEDS_INT:
+		spinBox = new QSpinBox();
+		spinBox->setMinimum(Argument.minValue);
+		spinBox->setMaximum(Argument.maxValue);
+		spinBox->setToolTip(QString("Numerical value, leave this blank for it to not be used."));
+		spinBox->setSizePolicy(QSizePolicy::Minimum,QSizePolicy::Minimum);
+		ArgumentTree->setItemWidget(Item,1,spinBox);
+		break;
+	case ARG_VALUE_NEEDS_STRING:
+		lineEdit = new QLineEdit();
+		spinBox->setToolTip(QString("String value, leave this blank for it to not be used."));
+		spinBox->setSizePolicy(QSizePolicy::Minimum,QSizePolicy::Minimum);
+		ArgumentTree->setItemWidget(Item,1,lineEdit);
+		break;
 		break;
 	}
 }
