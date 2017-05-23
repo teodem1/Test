@@ -42,7 +42,7 @@ dvar_s gDvars[] = {
 };
 
 COD2MAPArg_s gCod2MapArgs[] = {
-	{ "-platform", "Required if not copying a bsp between platforms; specifies target platform",ARG_VALUE_NEEDS_STRING, NULL,NULL,true},
+	{ "-platform", "Required if not copying a bsp between platforms; specifies target platform",ARG_VALUE_NEEDS_COMBO, NULL,NULL,true, QStringList() << "pc"},
 	{ "-pcToXenon","Copies a PC bsp to a Xenon bsp", ARG_VALUE_SET, NULL,NULL,true},
 	{ "-xenonToPc","Copies a Xenon bsp to a PC bsp", ARG_VALUE_SET, NULL,NULL,true },
 	{"-v","Verbose; enables extra compilation messages", ARG_VALUE_SET,NULL,NULL,true },
@@ -1354,8 +1354,8 @@ void mlMainWindow::OnEditCOD2MAPArgs()
 	Layout->addWidget(SettingsTree);
 	Layout->addWidget(ButtonBox);
 
-		for(int SettingIndx = 0; SettingIndx < ARRAYSIZE(gCod2MapArgs); SettingIndx++)
-			COD2MAP(gCod2MapArgs[SettingIndx], SettingsTree);
+	for(int SettingIndx = 0; SettingIndx < ARRAYSIZE(gCod2MapArgs); SettingIndx++)
+		COD2MAP(gCod2MapArgs[SettingIndx], SettingsTree);
 
 	connect(ButtonBox, SIGNAL(accepted()), &Dialog, SLOT(accept()));
 	connect(ButtonBox, SIGNAL(rejected()), &Dialog, SLOT(reject()));
@@ -1381,16 +1381,21 @@ void mlMainWindow::OnEditCOD2MAPArgs()
 			break;
 		case ARG_VALUE_SET:
 			SettingValue = COD2MAP::setCOD2MAPSetting(Setting,(QCheckBox*)Widget);
+			break;
+		case ARG_VALUE_NEEDS_INT:
+			SettingValue = COD2MAP::setCOD2MAPSetting(Setting,(QSpinBox*)Widget);
+			break;
+		case ARG_VALUE_NEEDS_COMBO:
+			SettingValue = COD2MAP::setCOD2MAPSetting(Setting,(QComboBox*)Widget);
+			break;
 		}
 
 		if(!SettingValue.toLatin1().isEmpty())
 		{
-			if(!Setting.isSettable)
-				mRunDvars << "+set" << SettingName;
-			else			// hack for cmds
-				mRunDvars << QString("+%1").arg(SettingName);
-
-			mRunDvars << SettingValue;
+			if(Setting.isSettable)
+				mCod2MapArgs << Setting.name;
+			else if (!Setting.isSettable)
+				mCod2MapArgs << Setting.name << SettingValue;
 		}
 		size++;
 		++it;

@@ -74,6 +74,23 @@ QString COD2MAP::setCOD2MAPSetting(COD2MAPArg_s Setting, QLineEdit* _textBox)
 	return Settings.value(QString("Setting_%1").arg(Setting.name)).toString();
 }
 
+QString COD2MAP::setCOD2MAPSetting(COD2MAPArg_s Setting, QSpinBox* _spinBox)
+{
+	QSettings Settings;
+	Settings.setValue(QString("Setting_%1").arg(Setting.name), _spinBox->value());
+
+	return Settings.value(QString("Setting_%1").arg(Setting.name)).toString();
+}
+
+QString COD2MAP::setCOD2MAPSetting(COD2MAPArg_s Setting, QComboBox* _comboBox)
+{
+	QSettings Settings;
+	Settings.setValue(QString("Setting_%1").arg(Setting.name), _comboBox->currentText());
+
+	return Settings.value(QString("Setting_%1").arg(Setting.name)).toString();
+}
+
+
 COD2MAP::~COD2MAP()
 {
 }

@@ -32,6 +32,8 @@ public:
 
 	static QString setCOD2MAPSetting(COD2MAPArg_s, QCheckBox*);
 	static QString setCOD2MAPSetting(COD2MAPArg_s, QLineEdit*);
+	static QString setCOD2MAPSetting(COD2MAPArg_s, QSpinBox*);
+	static QString setCOD2MAPSetting(COD2MAPArg_s, QComboBox*);
 
 	static COD2MAPArg_s findSetting(QString, QTreeWidget*, COD2MAPArg_s*, int);
 };
