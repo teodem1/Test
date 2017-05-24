@@ -27,16 +27,16 @@ const int AppId = 311210;
 const char* gLanguages[] = { "english", "french", "italian", "spanish", "german", "portuguese", "russian", "polish", "japanese", "traditionalchinese", "simplifiedchinese", "englisharabic" };
 const char* gTags[] = { "Animation", "Audio", "Character", "Map", "Mod", "Mode", "Model", "Multiplayer", "Scorestreak", "Skin", "Specialist", "Texture", "UI", "Vehicle", "Visual Effect", "Weapon", "WIP", "Zombies" };
 dvar_s gDvars[] = {
-					{"ai_disableSpawn", "Disable AI from spawning", DVAR_VALUE_BOOL},
-					{"developer", "Run developer mode", DVAR_VALUE_INT, 0, 2},
-					{"g_password", "Password for your server", DVAR_VALUE_STRING},
-					{"logfile", "Console log information written to current fs_game", DVAR_VALUE_INT, 0, 2},
-					{"scr_mod_enable_devblock", "Developer blocks are executed in mods ", DVAR_VALUE_BOOL},
-					{"connect", "Connect to a specific server", DVAR_VALUE_STRING, NULL, NULL, true},
-					{"set_gametype", "Set a gametype to load with map", DVAR_VALUE_STRING, NULL, NULL, true},
-					{"splitscreen", "Enable splitscreen", DVAR_VALUE_BOOL},
-					{"splitscreen_playerCount", "Allocate the number of instances for splitscreen", DVAR_VALUE_INT, 0, 2}
-				 };
+	{"ai_disableSpawn", "Disable AI from spawning", DVAR_VALUE_BOOL},
+	{"developer", "Run developer mode", DVAR_VALUE_INT, 0, 2},
+	{"g_password", "Password for your server", DVAR_VALUE_STRING},
+	{"logfile", "Console log information written to current fs_game", DVAR_VALUE_INT, 0, 2},
+	{"scr_mod_enable_devblock", "Developer blocks are executed in mods ", DVAR_VALUE_BOOL},
+	{"connect", "Connect to a specific server", DVAR_VALUE_STRING, NULL, NULL, true},
+	{"set_gametype", "Set a gametype to load with map", DVAR_VALUE_STRING, NULL, NULL, true},
+	{"splitscreen", "Enable splitscreen", DVAR_VALUE_BOOL},
+	{"splitscreen_playerCount", "Allocate the number of instances for splitscreen", DVAR_VALUE_INT, 0, 2}
+};
 enum mlItemType
 {
 	ML_ITEM_UNKNOWN,
@@ -252,7 +252,7 @@ mlMainWindow::mlMainWindow()
 
 	setWindowIcon(QIcon(":/resources/ModLauncher.png"));
 	setWindowTitle("Black Ops III Mod Tools Launcher");
-	
+
 	resize(1024, 768);
 
 	CreateActions();
@@ -322,6 +322,10 @@ mlMainWindow::mlMainWindow()
 	mDvarsButton = new QPushButton("Dvars");
 	connect(mDvarsButton, SIGNAL(clicked()), this, SLOT(OnEditDvars()));
 	ActionsLayout->addWidget(mDvarsButton);
+
+	mConvertButton = new QPushButton("Converter");
+	connect(mConvertButton,SIGNAL(clicked()),this,SLOT(OnConvertClicked()));
+	ActionsLayout->addWidget(mConvertButton);
 
 	mIgnoreErrorsWidget = new QCheckBox("Ignore Errors");
 	ActionsLayout->addWidget(mIgnoreErrorsWidget);
@@ -393,7 +397,7 @@ void mlMainWindow::CreateActions()
 
 void mlMainWindow::CreateMenu()
 {
-	QMenuBar* MenuBar = new QMenuBar(this);
+	MenuBar = new QMenuBar(this);
 
 	QMenu* FileMenu = new QMenu("&File", MenuBar);
 	FileMenu->addAction(mActionFileNew);
@@ -421,7 +425,7 @@ void mlMainWindow::CreateMenu()
 
 void mlMainWindow::CreateToolBar()
 {
-	QToolBar* ToolBar = new QToolBar("Standard", this);
+	ToolBar = new QToolBar("Standard", this);
 	ToolBar->setObjectName(QStringLiteral("StandardToolBar"));
 
 	ToolBar->addAction(mActionFileNew);
@@ -457,7 +461,7 @@ void mlMainWindow::InitExport2BinGUI()
 
 	mExport2BinOverwriteWidget = new QCheckBox("&Overwrite Existing Files", widget);
 	gridLayout->addWidget(mExport2BinOverwriteWidget, 1, 0);
-	
+
 	QSettings Settings;
 	mExport2BinOverwriteWidget->setChecked(Settings.value("Export2Bin_OverwriteFiles", true).toBool());
 
@@ -516,6 +520,12 @@ void mlMainWindow::UpdateDB()
 
 void mlMainWindow::StartBuildThread(const QList<QPair<QString, QStringList>>& Commands)
 {
+	if(mIsConverting)
+	{
+		mOutputWidget->appendPlainText("Aborted Conversion!");
+		mIsConverting = false;
+	}
+
 	mBuildButton->setText("Cancel");
 	mOutputWidget->clear();
 
@@ -1309,26 +1319,26 @@ void mlMainWindow::UpdateWorkshopItem()
 
 	SteamUGC()->SetItemTags(UpdateHandle, &Tags);
 
-	 SteamAPICall_t SteamAPICall = SteamUGC()->SubmitItemUpdate(UpdateHandle, "");
-	 mSteamCallResultUpdateItem.Set(SteamAPICall, this, &mlMainWindow::OnUpdateItemResult);
+	SteamAPICall_t SteamAPICall = SteamUGC()->SubmitItemUpdate(UpdateHandle, "");
+	mSteamCallResultUpdateItem.Set(SteamAPICall, this, &mlMainWindow::OnUpdateItemResult);
 
-	 QProgressDialog Dialog(this);
-	 Dialog.setLabelText(QString("Uploading workshop item '%1'...").arg(QString::number(mFileId)));
-	 Dialog.setCancelButton(NULL);
-	 Dialog.setWindowModality(Qt::WindowModal);
-	 Dialog.show();
+	QProgressDialog Dialog(this);
+	Dialog.setLabelText(QString("Uploading workshop item '%1'...").arg(QString::number(mFileId)));
+	Dialog.setCancelButton(NULL);
+	Dialog.setWindowModality(Qt::WindowModal);
+	Dialog.show();
 
-	 for (;;)
-	 {
-		 uint64 Processed, Total;
-		 if (SteamUGC()->GetItemUpdateProgress(SteamAPICall, &Processed, &Total) == k_EItemUpdateStatusInvalid)
-			 break;
+	for (;;)
+	{
+		uint64 Processed, Total;
+		if (SteamUGC()->GetItemUpdateProgress(SteamAPICall, &Processed, &Total) == k_EItemUpdateStatusInvalid)
+			break;
 
-		 Dialog.setMaximum(Total);
-		 Dialog.setValue(Processed);
-		 QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
-		 Sleep(100);
-	 }
+		Dialog.setMaximum(Total);
+		Dialog.setValue(Processed);
+		QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+		Sleep(100);
+	}
 }
 
 void mlMainWindow::OnCreateItemResult(CreateItemResult_t* CreateItemResult, bool IOFailure)
@@ -1378,7 +1388,7 @@ void mlMainWindow::OnOpenZoneFile()
 	QList<QTreeWidgetItem*> ItemList = mFileListWidget->selectedItems();
 	if (ItemList.isEmpty())
 		return;
-	
+
 	QTreeWidgetItem* Item = ItemList[0];
 
 	if (Item->data(0, Qt::UserRole).toInt() == ML_ITEM_MAP)
@@ -1581,7 +1591,7 @@ void Export2BinGroupBox::dropEvent(QDropEvent* event)
 		{
 			pathList.append(urlList.at(i).toLocalFile());
 		}
-		
+
 		QProcess* Process = new QProcess();
 		connect(Process, SIGNAL(finished(int)), Process, SLOT(deleteLater()));
 
@@ -1589,7 +1599,7 @@ void Export2BinGroupBox::dropEvent(QDropEvent* event)
 
 		QString outputDir = parentWindow->mExport2BinTargetDirWidget->text();
 		parentWindow->StartConvertThread(pathList, outputDir, allowOverwrite);
-		
+
 		event->acceptProposedAction();
 	}
 }
@@ -1597,4 +1607,26 @@ void Export2BinGroupBox::dropEvent(QDropEvent* event)
 void Export2BinGroupBox::dragLeaveEvent(QDragLeaveEvent* event)
 {
 	event->accept();
+}
+
+void mlMainWindow::OnConvertClicked()
+{
+	if(!mIsConverting)
+	{
+		auto Reply = QMessageBox::information(this,"Converter Warning!","This will take a long time, are you sure you wish to continue?",QMessageBox::Yes | QMessageBox::No);
+		if(Reply == QMessageBox::Yes)
+		{
+			mOutputWidget->appendPlainText("Starting Convertion!");
+			mIsConverting = true;
+
+			QList<QPair<QString, QStringList>> Commands;
+			Commands.append(QPair<QString, QStringList>(QString("%1/bin/linker_modtools.exe").arg(mToolsPath), QStringList() << "-language" << "english" << "-convertall" << "-verbose"));
+
+			StartBuildThread(Commands);
+		}
+	}
+	else
+	{
+		QMessageBox::warning(this,"Already Converting","Conversion is already in progress!",QMessageBox::Ok); //Cheeky DLC5 Comment Here.
+	}
 }
