@@ -117,6 +117,8 @@ protected slots:
 	void BuildFinished();
 	void ContextMenuRequested();
 	void SteamUpdate();
+	void OnConvertClicked();
+	void OnSaveZone();
 
 protected:
 	void closeEvent(QCloseEvent* Event);
@@ -134,6 +136,7 @@ protected:
 	void CreateToolBar();
 
 	void InitExport2BinGUI();
+	void InitZoneEditor();
 
 	QAction* mActionFileNew;
 	QAction* mActionFileAssetEditor;
@@ -150,6 +153,7 @@ protected:
 
 	QPushButton* mBuildButton;
 	QPushButton* mDvarsButton;
+	QPushButton* mConvertButton;
 	QCheckBox* mCompileEnabledWidget;
 	QComboBox* mCompileModeWidget;
 	QCheckBox* mLightEnabledWidget;
@@ -163,10 +167,13 @@ protected:
 	mlConvertThread* mConvertThread;
 
 	QDockWidget* mExport2BinGUIWidget;
+	QDockWidget* mZoneEditor;
 	QCheckBox* mExport2BinOverwriteWidget;
 	QLineEdit* mExport2BinTargetDirWidget;
 
 	bool mTreyarchTheme;
+	bool mIsConverting;
+
 	QString mBuildLanguage;
 
 	QStringList mShippedMapList;
@@ -185,6 +192,16 @@ protected:
 	QString mToolsPath;
 
 	QStringList mRunDvars;
+
+	QMenuBar* MenuBar;
+	QToolBar* ToolBar;
+
+	QString ZonePath;
+	QPlainTextEdit* TextEditor;
+	QDockWidget* Editor;
+	QWidget* Widget;
+	QGridLayout* Layout;
+	QPushButton *SaveButton;
 };
 
 class Export2BinGroupBox : public QGroupBox
