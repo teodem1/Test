@@ -14,26 +14,32 @@ void GDTCreator::dropEvent(QDropEvent* event)
 	if (event->mimeData()->hasUrls())
 	{
 		QList<QUrl> FileList = event->mimeData()->urls();
-
+		QString GDTType, FileName, Path;
 		for (int i = 0; i < FileList.size(); i++)
 		{	
 			QFileInfo CurrentFile = FileList.at(i).toLocalFile();
 
 			if(!AllowedFileTypes.contains(CurrentFile.suffix()))
 			{
-				QMessageBox::information(this,"Hold Up!",QString("Sorry, I Don't Support The File Type: %1").arg(CurrentFile.suffix()),QMessageBox::Ok); //¯\_(ツ)_/¯
+				QMessageBox::information(this,"Hold Up!",QString("Sorry, I Don't Support The File Type: %1").arg(CurrentFile.suffix()),QMessageBox::Ok);
 				return;
-			}
+			}			
 
 			if(CurrentFile.isDir())
 			{
 				QMessageBox::information(this,"Hold Up!","Sorry, I Don't Support Folders! Please Drag The Files Onto Me.",QMessageBox::Ok);
-				//I might need to refractor into a func so I can do this though ¯\_(ツ)_/¯
+				/*QDirIterator Iterator(CurrentFile.absolutePath(), QStringList() << "*.tif" << "*.tiff" << "*.xmodel_bin");
+				while(Iterator.hasNext())
+				{
+					GDTType = GetGDTType(Iterator.next());
+					FileName = GetGDTFileName(Iterator.next().split(".",QString::SkipEmptyParts).at(0));
+
+					MakeGDT(GDTType,FileName,QFileInfo(Iterator.next()).suffix(),
+				}*/
 				return;
 			}
 
 			QString WorkingDir = QFileInfo(CurrentFile).fileName().split(".",QString::SkipEmptyParts).at(0);
-			QString Path;
 			QString SavePath = QString("%1/%2").arg(model_export_folder->absolutePath(),WorkingDir);
 
 			if(parentWindow->mAutoCopyAssetsAfterGDTCreation->isChecked())
@@ -42,47 +48,20 @@ void GDTCreator::dropEvent(QDropEvent* event)
 					QDir().mkpath(SavePath);
 
 				QFile().copy(FileList.at(i).toLocalFile(),QString("%1/%2/%3").arg(model_export_folder->absolutePath(),WorkingDir,CurrentFile.fileName()));
-				
-
 				Path = QString("%1/%2/%3").arg("model_export",WorkingDir,CurrentFile.fileName());
 			}
 			else
 			{
 				Path = FileList.at(i).toLocalFile();
 			}
+	
+			GDTType = GetGDTType(CurrentFile);
 
-			//Create GDT Now.
-			QInputDialog GDTType;
-			QString GDTTemplate;
-			QString FileName;
-
-			GDTType.setOption(QInputDialog::UseListViewForComboBoxItems);
-			GDTType.setWindowTitle("GDT Creation Type");
-			GDTType.setLabelText(QString("What Type Of GDT Should I Create?\nAsset: %1").arg(CurrentFile.fileName()));
-			GDTType.setComboBoxItems(QStringList() << "xmodel" << "image");
-			int Ret = GDTType.exec();
-
-			if (Ret != QDialog::Accepted)
-				return;
-
-			//This Doesn't Work, But Also Works....
-			if(!GDTType.textValue().isEmpty())
+			if(!GDTType.isEmpty())
 			{
-				FileName = WorkingDir.left(WorkingDir.lastIndexOf('_'));
-				QInputDialog FileNameInput;
-				FileNameInput.setInputMode(QInputDialog::TextInput);
-				FileNameInput.setWindowTitle("File Name");
-				FileNameInput.setLabelText("What Should I Call The GDT?");
-				bool Res;
-				FileName = FileNameInput.getText(this,"File Name","What Should I Call The GDT?",QLineEdit::Normal,FileName, &Res);
-
-				if(!Res)
-					return;
-
-				MakeGDT(GDTType.textValue(), FileName, CurrentFile.suffix(),Path);
-
+				FileName = GetGDTFileName(WorkingDir);
+				MakeGDT(GDTType, FileName, CurrentFile.suffix(),Path);
 			}
-			//Add Material Stuff.
 		}
 	}
 
@@ -166,4 +145,42 @@ void GDTCreator::MakeGDT(QString Type, QString Name, QString Extension, QString 
 			return;
 		}
 	}
+}
+
+QString GDTCreator::GetGDTType(QFileInfo CurrentFile)
+{
+	QInputDialog GDTType;
+	QString GDTTemplate;
+	int Ret;
+
+	GDTType.setOption(QInputDialog::UseListViewForComboBoxItems);
+	GDTType.setWindowTitle("GDT Creation Type");
+	GDTType.setLabelText(QString("What Type Of GDT Should I Create?\nAsset: %1").arg(CurrentFile.fileName()));
+	GDTType.setComboBoxItems(QStringList() << "xmodel" << "image");
+
+	do
+	{
+		Ret = GDTType.exec();
+	}while(Ret != QDialog::Accepted);
+
+	if(!GDTType.textValue().isEmpty())
+		return GDTType.textValue();
+}
+
+QString GDTCreator::GetGDTFileName(QString WorkingDir)
+{
+	QString FileName = WorkingDir.left(WorkingDir.lastIndexOf('_'));
+	QInputDialog FileNameInput;
+	FileNameInput.setInputMode(QInputDialog::TextInput);
+	FileNameInput.setWindowTitle("File Name");
+	FileNameInput.setLabelText("What Should I Call The GDT?");
+	bool Res;
+
+	do
+	{
+		FileName = FileNameInput.getText(this,"File Name","What Should I Call The GDT?",QLineEdit::Normal,FileName, &Res);
+	}while(Res != true);
+
+	parentWindow->mOutputWidget->appendPlainText(FileName);
+	return FileName;
 }

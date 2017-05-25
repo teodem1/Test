@@ -14,8 +14,10 @@ protected:
 	void dragEnterEvent(QDragEnterEvent* event);
 	void dragLeaveEvent(QDragLeaveEvent* event);
 	void dropEvent(QDropEvent *event);
-	void MakeGDT(QString, QString, QString, QString); //Type, Extension, Name, Path
 
+	void MakeGDT(QString, QString, QString, QString); //Type, Extension, Name, Path
+	QString GetGDTType(QFileInfo); //Current File
+	QString GetGDTFileName(QString); //Working Dir
 
 public:
 	GDTCreator(QWidget *parent, mlMainWindow* parent_window);
