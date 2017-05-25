@@ -29,6 +29,9 @@
     <Filter Include="Generated Files\External_Release">
       <UniqueIdentifier>{5fc30545-a821-4000-9780-d6dd6c4d03ff}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\NewFilter1">
+      <UniqueIdentifier>{fc29ef6f-4b5c-41e5-ae4f-6db41e4cd3f4}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -58,6 +61,9 @@
     <ClCompile Include="cod2map.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="GDTCreator.cpp">
+      <Filter>Source Files\NewFilter1</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="ModLauncher.rc">
@@ -84,6 +90,9 @@
     </ClInclude>
     <ClInclude Include="cod2map.h">
       <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GDTCreator.h">
+      <Filter>Source Files\NewFilter1</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -80,7 +80,7 @@ class mlMainWindow : public QMainWindow
 	Q_OBJECT
 
 	friend class Export2BinGroupBox;
-	friend class GDTCreatorGroupBox;
+	friend class GDTCreator;
 
 public:
 	mlMainWindow();
@@ -252,20 +252,6 @@ public:
 	Export2BinGroupBox(QWidget *parent, mlMainWindow* parent_window);
 };
 
-class GDTCreatorGroupBox : public QGroupBox
-{
-private:
-	mlMainWindow* parentWindow;
-
-protected:
-	void dragEnterEvent(QDragEnterEvent* event);
-	void dragLeaveEvent(QDragLeaveEvent* event);
-	void dropEvent(QDropEvent *event);
-
-public:
-	GDTCreatorGroupBox(QWidget *parent, mlMainWindow* parent_window);
-};
-
 class Syntax : public QSyntaxHighlighter
 {
     Q_OBJECT
@@ -294,3 +280,4 @@ private:
 	QTextCharFormat IncludeFormat;
 	QTextCharFormat PreProcessor;
 };
+

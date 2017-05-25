@@ -363,9 +363,10 @@ mlMainWindow::mlMainWindow()
 	mRunEnabledWidget = new QCheckBox("Run");
 	ActionsLayout->addWidget(mRunEnabledWidget);
 
-	mCOD2MAPOptionsButton = new QPushButton("More Args");
+	mCOD2MAPOptionsButton = new QPushButton("COD2MAP Args");
 	connect(mCOD2MAPOptionsButton,SIGNAL(clicked()),this,SLOT(OnEditCOD2MAPArgs()));
 	ActionsLayout->addWidget(mCOD2MAPOptionsButton);
+	//mCOD2MAPOptionsButton->setEnabled(false); //Broken For Now. Not Fixing Until Weekend When I Have Time. 
 
 	mBuildButton = new QPushButton("Build");
 	connect(mBuildButton, SIGNAL(clicked()), mActionEditBuild, SLOT(trigger()));
@@ -577,7 +578,7 @@ void mlMainWindow::InitGDTCreator()
 	widget->setLayout(gridLayout);
 	dock->setWidget(widget);
 
-	GDTCreatorGroupBox* groupBox = new GDTCreatorGroupBox(dock, this);
+	GDTCreator* groupBox = new GDTCreator(dock, this);
 	gridLayout->addWidget(groupBox, 0, 0,1,0);
 
 	QLabel* label = new QLabel("Drag Files Here", groupBox);
@@ -967,12 +968,17 @@ void mlMainWindow::OnEditBuild()
 				AddUpdateDBCommand();
 
 				QStringList Args;
-				Args << "-platform" << "pc";
-				if (mCompileModeWidget->currentIndex() == 0)
-					Args << "-onlyents";
-				else
-					Args << "-navmesh" << "-navvolume";
 
+				if(!mRunDvars.isEmpty())
+					Args << mCod2MapArgs;
+				else
+				{
+					Args << "-platform" << "pc";
+					if (mCompileModeWidget->currentIndex() == 0)
+						Args << "-onlyents";
+					else
+						Args << "-navmesh" << "-navvolume";
+				}
 				Args << "-loadFrom" << QString("%1\\map_source\\%2\\%3.map").arg(mGamePath, MapName.left(2), MapName);
 				Args << QString("%1\\share\\raw\\maps\\%2\\%3.d3dbsp").arg(mGamePath, MapName.left(2), MapName);
 
@@ -1393,9 +1399,15 @@ void mlMainWindow::OnEditCOD2MAPArgs()
 		if(!SettingValue.toLatin1().isEmpty())
 		{
 			if(Setting.isSettable)
+			{
 				mCod2MapArgs << Setting.name;
+				mOutputWidget->appendPlainText(Setting.name);
+			}
 			else if (!Setting.isSettable)
+				{
 				mCod2MapArgs << Setting.name << SettingValue;
+			mOutputWidget->appendPlainText(QString("%1 %2").arg(SettingName));
+			}
 		}
 		size++;
 		++it;
@@ -1966,174 +1978,6 @@ void mlMainWindow::OnTextChanged()
 void mlMainWindow::UpdateSyntax()
 {
 	Syntax* highlighter = new Syntax(mZoneTextEdit->document());
-}
-
-void GDTCreatorGroupBox::dropEvent(QDropEvent* event)
-{
-	QDir source_data_folder(QString("%1/source_data").arg(parentWindow->mToolsPath));
-	QDir model_export_folder(QString("%1/model_export").arg(parentWindow->mToolsPath));
-
-	const QMimeData* mimeData = event->mimeData();
-
-	if (parentWindow == NULL)
-	{
-		return;
-	}
-
-	if (mimeData->hasUrls())
-	{
-		QStringList pathList;
-		QList<QUrl> urlList = mimeData->urls();
-
-		for (int i = 0; i < urlList.size(); i++)
-		{	
-			QStringList AllowedFileTypes;
-			AllowedFileTypes << "tiff" << "tif" << "xmodel_bin";
-			QFileInfo Current =urlList.at(i).toLocalFile();
-
-			if(!AllowedFileTypes.contains(Current.suffix()))
-			{
-				QMessageBox::warning(this,"Incorrect Format!","Please Convert This File To Either XMODEL_BIN, TIFF Or TIF",QMessageBox::Ok);
-				return;
-			}
-
-			if(Current.isDir())
-			{
-				QMessageBox::information(this,"Hold Up!","Sorry, I Don't Support Folders! Please Drag The Files Onto Me.",QMessageBox::Ok); //Iterate Through Them In A Later Release.
-				//I might need to refractor into a func so I can do this though ¯\_(ツ)_/¯
-				return;
-			}
-
-			QString WorkingDir = QFileInfo(urlList.at(i).toLocalFile()).fileName().split(".",QString::SkipEmptyParts).at(0);
-			QString Path;
-			if(parentWindow->mAutoCopyAssetsAfterGDTCreation->isChecked())
-			{
-				if(!QDir().exists(WorkingDir))
-					QDir().mkpath(QString("%1/%2").arg(model_export_folder.absolutePath(),WorkingDir)); //Make Path
-
-				QFile().copy(urlList.at(i).toLocalFile(),QString("%1/%2/%3").arg(model_export_folder.absolutePath(),WorkingDir,QFileInfo(urlList.at(i).toLocalFile()).fileName()));
-				Path = QString("%1/%2/%3").arg("model_export",WorkingDir,QFileInfo(urlList.at(i).toLocalFile()).fileName());
-			}
-			else
-			{
-				Path = urlList.at(i).toLocalFile();
-			}
-
-			//Create GDT Now.
-			QInputDialog GDTType;
-			QStringList GDTTypeList;
-			QString GDTTemplate;
-			QString FileName;
-
-			GDTTypeList << "xmodel" << "image";
-			GDTType.setOption(QInputDialog::UseListViewForComboBoxItems);
-			GDTType.setWindowTitle("GDT Creation Type");
-			GDTType.setLabelText(QString("What Type Of GDT Should I Create?\nAsset: %1").arg(QFileInfo(urlList.at(i).toLocalFile()).fileName()));
-			GDTType.setComboBoxItems(GDTTypeList);
-			int Ret = GDTType.exec();
-
-			if (Ret != QDialog::Accepted)
-				return;
-
-			//This Doesn't Work, But Also Works....
-			if(!GDTType.textValue().isEmpty())
-			{
-				FileName = WorkingDir.left(WorkingDir.lastIndexOf('_'));
-				QInputDialog FileNameInput;
-				FileNameInput.setWindowTitle("File Name");
-				FileNameInput.setLabelText("What Should I Call The GDT?");
-				bool Res;
-				FileNameInput.getText(this,"File Name","What Should I Call The GDT?",QLineEdit::Normal,FileName, &Res);
-
-				if(!Res)
-					return;
-
-				FileName= FileNameInput.textValue();
-
-
-				if(GDTType.textValue() == "xmodel" && QFileInfo(urlList.at(i).toLocalFile()).suffix() == "xmodel_bin")
-				{
-					GDTTemplate = 
-						"{\n" +
-						QString("\t\"%1\" ( \"xmodel.gdf\" )\n").arg(WorkingDir.left(WorkingDir.lastIndexOf('_'))) +
-						"\t{\n" +
-						"\t\t\"filename\" \"" + Path + "\"\n" +
-						"\t\t\"highLodDist\" \"751\"\n" + 
-						"\t\t\"type\" \"rigid\"\n" +
-						"\t}\n" +
-						"}\n";
-					QFile xModelFile(QString("%1/%2.%3").arg(source_data_folder.absolutePath(),FileName,".gdt"));
-					if(xModelFile.open(QFile::ReadWrite))
-					{
-						QTextStream FileWriter(&xModelFile);
-						FileWriter << GDTTemplate;
-						FileWriter.flush();
-						xModelFile.close();
-					}
-					else
-					{
-						QMessageBox::critical(this,"Uh-Oh!","I Couldn't Open The File For Saving",QMessageBox::Ok);
-						return;
-					}
-				}
-
-				if (GDTType.textValue() == "image" && QFileInfo(urlList.at(i).toLocalFile()).suffix() == "tiff" || QFileInfo(urlList.at(i).toLocalFile()).suffix() == "tif")
-				{
-					GDTTemplate = 
-						"{\n" + 
-						QString("\t\"%1\" ( \"image.gdf\" )\n").arg(WorkingDir.left(WorkingDir.lastIndexOf('_'))) +
-						"\t{\n" +
-						"\t\t\"baseImage\" \"" + Path +"\"\n" +
-						"\t\t\"semantic\" \"diffuseMap\"\n" +
-						"\t\t\"imageType\" \"Texture\"\n" +
-						"\t\t\"type\" \"image\"\n" +	
-						"\t}\n" +
-						"}\n";
-					QFile xModelFile(QString("%1/%2.%3").arg(source_data_folder.absolutePath(),FileName,".gdt"));
-					if(xModelFile.open(QFile::ReadWrite))
-					{
-						QTextStream FileWriter(&xModelFile);
-						FileWriter << GDTTemplate;
-						FileWriter.flush();
-						xModelFile.close();
-					}
-					else
-					{
-						QMessageBox::critical(this,"Uh-Oh!","I Couldn't Open The File For Saving",QMessageBox::Ok);
-						return;
-					}
-
-				}
-				else
-				{
-					QMessageBox::warning(this,"Uh-Oh!","I Can't Create A GDT For This File Type.\nPlease make sure you're using xmodel_bin, tif or tiff.",QMessageBox::Ok);
-					return;
-				}
-				//Add Material Stuff.
-			}
-		}
-
-		if(parentWindow->mOpenAPEAfterCreation->isChecked())
-			parentWindow->mActionFileAssetEditor->trigger();
-
-		event->acceptProposedAction();
-	}
-}
-
-
-GDTCreatorGroupBox::GDTCreatorGroupBox(QWidget* parent, mlMainWindow* parent_window) : QGroupBox(parent), parentWindow(parent_window)
-{
-	this->setAcceptDrops(true);
-}
-
-void GDTCreatorGroupBox::dragEnterEvent(QDragEnterEvent* event)
-{
-	event->acceptProposedAction();
-}
-
-void GDTCreatorGroupBox::dragLeaveEvent(QDragLeaveEvent* event)
-{
-	event->accept();
 }
 
 Export2BinGroupBox::Export2BinGroupBox(QWidget* parent, mlMainWindow* parent_window) : QGroupBox(parent), parentWindow(parent_window)
