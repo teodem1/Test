@@ -41,7 +41,9 @@ void GDTCreator::dropEvent(QDropEvent* event)
 				if(!QDir().exists(SavePath))
 					QDir().mkpath(SavePath);
 
-				QFile().copy(CurrentFile.fileName(),QString("%1/%2/%3").arg(model_export_folder->absolutePath(),WorkingDir,CurrentFile.fileName()));
+				QFile().copy(FileList.at(i).toLocalFile(),QString("%1/%2/%3").arg(model_export_folder->absolutePath(),WorkingDir,CurrentFile.fileName()));
+				
+
 				Path = QString("%1/%2/%3").arg("model_export",WorkingDir,CurrentFile.fileName());
 			}
 			else
@@ -56,7 +58,7 @@ void GDTCreator::dropEvent(QDropEvent* event)
 
 			GDTType.setOption(QInputDialog::UseListViewForComboBoxItems);
 			GDTType.setWindowTitle("GDT Creation Type");
-			GDTType.setLabelText(QString("What Type Of GDT Should I Create?\nAsset: %1").arg(QFileInfo(FileList.at(i).toLocalFile()).fileName()));
+			GDTType.setLabelText(QString("What Type Of GDT Should I Create?\nAsset: %1").arg(CurrentFile.fileName()));
 			GDTType.setComboBoxItems(QStringList() << "xmodel" << "image");
 			int Ret = GDTType.exec();
 
@@ -77,44 +79,17 @@ void GDTCreator::dropEvent(QDropEvent* event)
 				if(!Res)
 					return;
 
-				parentWindow->mOutputWidget->appendPlainText(QString("HERE: %1").arg(FileName));
+				MakeGDT(GDTType.textValue(), FileName, CurrentFile.suffix(),Path);
 
-				if (GDTType.textValue() == "image" && QFileInfo(FileList.at(i).toLocalFile()).suffix() == "tiff" || QFileInfo(FileList.at(i).toLocalFile()).suffix() == "tif")
-				{
-					GDTTemplate = 
-						"{\n" + 
-						QString("\t\"%1\" ( \"image.gdf\" )\n").arg(WorkingDir.left(WorkingDir.lastIndexOf('_'))) +
-						"\t{\n" +
-						"\t\t\"baseImage\" \"" + Path +"\"\n" +
-						"\t\t\"semantic\" \"diffuseMap\"\n" +
-						"\t\t\"imageType\" \"Texture\"\n" +
-						"\t\t\"type\" \"image\"\n" +	
-						"\t}\n" +
-						"}\n";
-					QFile xModelFile(QString("%1/%2.%3").arg(source_data_folder->absolutePath(),FileName,".gdt"));
-					if(xModelFile.open(QFile::ReadWrite))
-					{
-						QTextStream FileWriter(&xModelFile);
-						FileWriter << GDTTemplate;
-						FileWriter.flush();
-						xModelFile.close();
-					}
-					else
-					{
-						QMessageBox::critical(this,"Uh-Oh!","I Couldn't Open The File For Saving",QMessageBox::Ok);
-						return;
-					}
-
-				}
-				//Add Material Stuff.
 			}
+			//Add Material Stuff.
 		}
-
-		if(parentWindow->mOpenAPEAfterCreation->isChecked())
-			parentWindow->mActionFileAssetEditor->trigger();
-
-		event->acceptProposedAction();
 	}
+
+	if(parentWindow->mOpenAPEAfterCreation->isChecked())
+		parentWindow->mActionFileAssetEditor->trigger();
+
+	event->acceptProposedAction();
 }
 
 GDTCreator::GDTCreator(QWidget* parent, mlMainWindow* parent_window) : QGroupBox(parent), parentWindow(parent_window)
@@ -136,6 +111,7 @@ void GDTCreator::MakeGDT(QString Type, QString Name, QString Extension, QString 
 {
 	QString Template;
 	QFile* GDTFile;
+
 	if(Type == "xmodel" && Extension == "xmodel_bin")
 	{
 		Template = 
@@ -147,7 +123,36 @@ void GDTCreator::MakeGDT(QString Type, QString Name, QString Extension, QString 
 			"\t\t\"type\" \"rigid\"\n" +
 			"\t}\n" +
 			"}\n";
-		GDTFile = new QFile(QString("%1/%2.%3").arg(source_data_folder->absolutePath(),Name,".gdt"));
+
+		GDTFile = new QFile(QString("%1/%2.%3").arg(source_data_folder->absolutePath(),Name,"gdt"));
+		if(GDTFile->open(QFile::ReadWrite))
+		{
+			QTextStream FileWriter(GDTFile);
+			FileWriter << Template;
+			FileWriter.flush();
+			GDTFile->close();
+		}
+		else
+		{
+			QMessageBox::critical(this,"Uh-Oh!","I Couldn't Open The File For Saving",QMessageBox::Ok);
+			return;
+		}
+	}
+	else if(Type == "image" && Extension == "tiff" || Extension == "tif")
+	{
+		Template = 
+			"{\n" + 
+			QString("\t\"%1\" ( \"image.gdf\" )\n").arg(Name) +
+			"\t{\n" +
+			"\t\t\"baseImage\" \"" + Path +"\"\n" +
+			"\t\t\"semantic\" \"diffuseMap\"\n" +
+			"\t\t\"imageType\" \"Texture\"\n" +
+			"\t\t\"type\" \"image\"\n" +
+			"\t\t\"compressionMethod\" \"uncompressed\"\n" +
+			"\t}\n" +
+			"}\n";
+
+		GDTFile = new QFile(QString("%1/%2.%3").arg(source_data_folder->absolutePath(),Name,"gdt"));
 		if(GDTFile->open(QFile::ReadWrite))
 		{
 			QTextStream FileWriter(GDTFile);
