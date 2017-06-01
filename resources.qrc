@@ -2,7 +2,6 @@
     <qresource prefix="/">
         <file>resources/AssetEditor.png</file>
         <file>resources/BlackOps3.png</file>
-        <file>resources/Export2Bin.png</file>
         <file>resources/Radiant.png</file>
         <file>resources/ModLauncher.png</file>
         <file>resources/Go.png</file>
@@ -11,5 +10,7 @@
         <file>stylesheet/stylesheet/checkbox.png</file>
         <file>stylesheet/stylesheet/down_arrow.png</file>
         <file>stylesheet/stylesheet/handle.png</file>
+        <file>resources/devhead.png</file>
+        <file>resources/GDTCreator.png</file>
     </qresource>
 </RCC>

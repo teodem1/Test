@@ -70,7 +70,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='External_Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v120</PlatformToolset>
+    <PlatformToolset>v110</PlatformToolset>
     <WholeProgramOptimization>false</WholeProgramOptimization>
     <CharacterSet />
   </PropertyGroup>
@@ -132,6 +132,8 @@
     <TargetName>$(ProjectName)$(TA_EXECUTABLE_SUFFIX)</TargetName>
     <LinkIncremental />
     <OutDir>$(TA_TOOLS_PATH)\bin\</OutDir>
+    <IncludePath>D:\Software\Qt\5.1.0\msvc2012_64\include\QtANGLE;D:\Johnathon\Documents\GitHub\steamworks\sdk\public\steam;$(IncludePath)</IncludePath>
+    <LibraryPath>D:\Johnathon\Documents\GitHub\steamworks\sdk\redistributable_bin\win64;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -304,6 +306,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dvar.cpp" />
+    <ClCompile Include="GDTCreator.cpp" />
     <ClCompile Include="GeneratedFiles\Debug\moc_mlMainWindow.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='External_Release|Win32'">true</ExcludedFromBuild>
@@ -454,13 +457,14 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="dvar.h" />
+    <ClInclude Include="GDTCreator.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
   <ProjectExtensions>
     <VisualStudio>
-      <UserProperties Qt5Version_x0020_x64="msvc2013_64" />
+      <UserProperties Qt5Version_x0020_x64="qt" />
     </VisualStudio>
   </ProjectExtensions>
 </Project>

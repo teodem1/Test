@@ -29,6 +29,9 @@
     <Filter Include="Generated Files\External_Release">
       <UniqueIdentifier>{5fc30545-a821-4000-9780-d6dd6c4d03ff}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\GDT">
+      <UniqueIdentifier>{fc29ef6f-4b5c-41e5-ae4f-6db41e4cd3f4}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -55,6 +58,9 @@
     <ClCompile Include="dvar.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="GDTCreator.cpp">
+      <Filter>Source Files\GDT</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="ModLauncher.rc">
@@ -78,6 +84,9 @@
   <ItemGroup>
     <ClInclude Include="dvar.h">
       <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GDTCreator.h">
+      <Filter>Source Files\GDT</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

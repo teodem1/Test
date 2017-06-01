@@ -1,4 +1,4 @@
-/*
+﻿/*
 *
 * Copyright 2016 Activision Publishing, Inc.
 *
@@ -26,17 +26,21 @@ const int AppId = 311210;
 
 const char* gLanguages[] = { "english", "french", "italian", "spanish", "german", "portuguese", "russian", "polish", "japanese", "traditionalchinese", "simplifiedchinese", "englisharabic" };
 const char* gTags[] = { "Animation", "Audio", "Character", "Map", "Mod", "Mode", "Model", "Multiplayer", "Scorestreak", "Skin", "Specialist", "Texture", "UI", "Vehicle", "Visual Effect", "Weapon", "WIP", "Zombies" };
+QStringList mShippedMapList;
+
 dvar_s gDvars[] = {
-					{"ai_disableSpawn", "Disable AI from spawning", DVAR_VALUE_BOOL},
-					{"developer", "Run developer mode", DVAR_VALUE_INT, 0, 2},
-					{"g_password", "Password for your server", DVAR_VALUE_STRING},
-					{"logfile", "Console log information written to current fs_game", DVAR_VALUE_INT, 0, 2},
-					{"scr_mod_enable_devblock", "Developer blocks are executed in mods ", DVAR_VALUE_BOOL},
-					{"connect", "Connect to a specific server", DVAR_VALUE_STRING, NULL, NULL, true},
-					{"set_gametype", "Set a gametype to load with map", DVAR_VALUE_STRING, NULL, NULL, true},
-					{"splitscreen", "Enable splitscreen", DVAR_VALUE_BOOL},
-					{"splitscreen_playerCount", "Allocate the number of instances for splitscreen", DVAR_VALUE_INT, 0, 2}
-				 };
+	{"ai_disableSpawn", "Disable AI from spawning", DVAR_VALUE_BOOL},
+	{"developer", "Run developer mode", DVAR_VALUE_INT, 0, 2},
+	{"g_password", "Password for your server", DVAR_VALUE_STRING},
+	{"logfile", "Console log information written to current fs_game", DVAR_VALUE_INT, 0, 2},
+	{"scr_mod_enable_devblock", "Developer blocks are executed in mods ", DVAR_VALUE_BOOL},
+	{"connect", "Connect to a specific server", DVAR_VALUE_STRING, NULL, NULL, true},
+	{"set_gametype", "Set a gametype to load with map", DVAR_VALUE_STRING, NULL, NULL, true},
+	{"splitscreen", "Enable splitscreen", DVAR_VALUE_BOOL},
+	{"splitscreen_playerCount", "Allocate the number of instances for splitscreen", DVAR_VALUE_INT, 0, 2},
+	{"devmap","Launch to this map using devmap",DVAR_VALUE_COMBO,0,0,true},
+};
+
 enum mlItemType
 {
 	ML_ITEM_UNKNOWN,
@@ -92,8 +96,7 @@ void mlBuildThread::run()
 	mSuccess = Success;
 }
 
-mlConvertThread::mlConvertThread(QStringList& Files, QString& OutputDir, bool IgnoreErrors, bool OverwriteFiles)
-	: mFiles(Files), mOutputDir(OutputDir), mSuccess(false), mCancel(false), mIgnoreErrors(IgnoreErrors), mOverwrite(OverwriteFiles)
+mlConvertThread::mlConvertThread(QStringList& Files, QString& OutputDir, bool IgnoreErrors, bool OverwriteFiles)	: mFiles(Files), mOutputDir(OutputDir), mSuccess(false), mCancel(false), mIgnoreErrors(IgnoreErrors), mOverwrite(OverwriteFiles)
 {
 }
 
@@ -118,11 +121,11 @@ void mlConvertThread::run()
 		file = file_info.baseName();
 
 		QString ToolsPath = QDir::fromNativeSeparators(getenv("TA_TOOLS_PATH"));
-		QString ExecutablePath = QString("%1bin/export2bin.exe").arg(ToolsPath);
+		QString ExecutablePath = QString("%1bin\\export2bin.exe").arg(ToolsPath);
 
 		QStringList args;
 		//args.append("/v"); // Verbose
-		args.append("/piped");
+		//args.append("/piped");
 
 		QString filepath = file_info.absoluteFilePath();
 
@@ -243,6 +246,8 @@ mlMainWindow::mlMainWindow()
 	mBuildThread = NULL;
 	mBuildLanguage = Settings.value("BuildLanguage", "english").toString();
 	mTreyarchTheme = Settings.value("UseDarkTheme", false).toBool();
+	mUseBuiltInEditor= Settings.value("InBuiltEditor",false).toBool();
+	mOpenAPEAfter = Settings.value("GDTCreate_OpenAPEAfterCreation",false).toBool();
 
 	// Qt prefers '/' over '\\'
 	mGamePath = QString(getenv("TA_GAME_PATH")).replace('\\', '/');
@@ -252,7 +257,7 @@ mlMainWindow::mlMainWindow()
 
 	setWindowIcon(QIcon(":/resources/ModLauncher.png"));
 	setWindowTitle("Black Ops III Mod Tools Launcher");
-	
+
 	resize(1024, 768);
 
 	CreateActions();
@@ -260,6 +265,8 @@ mlMainWindow::mlMainWindow()
 	CreateToolBar();
 
 	mExport2BinGUIWidget = NULL;
+	mGDTCreatorGUIWidget = NULL;
+	mZoneEditorGUIWidget = NULL;
 
 	QSplitter* CentralWidget = new QSplitter();
 	CentralWidget->setOrientation(Qt::Vertical);
@@ -311,9 +318,7 @@ mlMainWindow::mlMainWindow()
 	mRunEnabledWidget = new QCheckBox("Run");
 	ActionsLayout->addWidget(mRunEnabledWidget);
 
-	mRunOptionsWidget = new QLineEdit();
-	mRunOptionsWidget->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
-	ActionsLayout->addWidget(mRunOptionsWidget);
+	
 
 	mBuildButton = new QPushButton("Build");
 	connect(mBuildButton, SIGNAL(clicked()), mActionEditBuild, SLOT(trigger()));
@@ -322,6 +327,10 @@ mlMainWindow::mlMainWindow()
 	mDvarsButton = new QPushButton("Dvars");
 	connect(mDvarsButton, SIGNAL(clicked()), this, SLOT(OnEditDvars()));
 	ActionsLayout->addWidget(mDvarsButton);
+
+	mConvertButton = new QPushButton("Convert");
+	connect(mConvertButton, SIGNAL(clicked()), this, SLOT(OnConvertButton()));
+	ActionsLayout->addWidget(mConvertButton);
 
 	mIgnoreErrorsWidget = new QCheckBox("Ignore Errors");
 	ActionsLayout->addWidget(mIgnoreErrorsWidget);
@@ -346,6 +355,8 @@ mlMainWindow::mlMainWindow()
 
 	connect(&mTimer, SIGNAL(timeout()), this, SLOT(SteamUpdate()));
 	mTimer.start(1000);
+	SyntaxTimer.setSingleShot(true);
+	connect(&SyntaxTimer,SIGNAL(timeout()),this,SLOT(UpdateSyntax()));
 
 	PopulateFileList();
 }
@@ -369,9 +380,13 @@ void mlMainWindow::CreateActions()
 	mActionFileLevelEditor->setToolTip("Level Editor");
 	connect(mActionFileLevelEditor, SIGNAL(triggered()), this, SLOT(OnFileLevelEditor()));
 
-	mActionFileExport2Bin = new QAction(QIcon(":/resources/Export2Bin.png"), "&Export2Bin GUI", this);
+	mActionFileExport2Bin = new QAction(QIcon(":/resources/devhead.png"), "&Export2Bin GUI", this);
 	mActionFileExport2Bin->setShortcut(QKeySequence("Ctrl+E"));
 	connect(mActionFileExport2Bin, SIGNAL(triggered()), this, SLOT(OnFileExport2Bin()));
+
+	mActionCreateGdt = new QAction(QIcon(":/resources/GDTCreator.png"), "&GDT Creator", this);
+	mActionCreateGdt->setShortcut(QKeySequence("Ctrl+G"));
+	connect(mActionCreateGdt, SIGNAL(triggered()), this, SLOT(OnFileGDTCreator()));
 
 	mActionFileExit = new QAction("E&xit", this);
 	connect(mActionFileExit, SIGNAL(triggered()), this, SLOT(close()));
@@ -389,6 +404,14 @@ void mlMainWindow::CreateActions()
 
 	mActionHelpAbout = new QAction("&About...", this);
 	connect(mActionHelpAbout, SIGNAL(triggered()), this, SLOT(OnHelpAbout()));
+
+	mActionOpenDocs = new QAction("&Documentation",this);
+	connect(mActionOpenDocs, SIGNAL(triggered()),this,SLOT(OnOpenDocs()));
+
+	mActionSaveOutput = new QAction("&Save Console Output",this);
+	mActionSaveOutput->setShortcut(QKeySequence("CTRL+S"));
+	connect(mActionSaveOutput,SIGNAL(triggered()),this,SLOT(OnSaveOutput()));
+
 }
 
 void mlMainWindow::CreateMenu()
@@ -401,6 +424,9 @@ void mlMainWindow::CreateMenu()
 	FileMenu->addAction(mActionFileAssetEditor);
 	FileMenu->addAction(mActionFileLevelEditor);
 	FileMenu->addAction(mActionFileExport2Bin);
+	FileMenu->addAction(mActionCreateGdt);
+	FileMenu->addSeparator();
+	FileMenu->addAction(mActionSaveOutput);
 	FileMenu->addSeparator();
 	FileMenu->addAction(mActionFileExit);
 	MenuBar->addAction(FileMenu->menuAction());
@@ -414,6 +440,7 @@ void mlMainWindow::CreateMenu()
 
 	QMenu* HelpMenu = new QMenu("&Help", MenuBar);
 	HelpMenu->addAction(mActionHelpAbout);
+	HelpMenu->addAction(mActionOpenDocs);
 	MenuBar->addAction(HelpMenu->menuAction());
 
 	setMenuBar(MenuBar);
@@ -431,6 +458,9 @@ void mlMainWindow::CreateToolBar()
 	ToolBar->addAction(mActionFileAssetEditor);
 	ToolBar->addAction(mActionFileLevelEditor);
 	ToolBar->addAction(mActionFileExport2Bin);
+	ToolBar->addAction(mActionCreateGdt);
+
+	ToolBar->setMovable(false);
 
 	addToolBar(Qt::TopToolBarArea, ToolBar);
 }
@@ -457,7 +487,7 @@ void mlMainWindow::InitExport2BinGUI()
 
 	mExport2BinOverwriteWidget = new QCheckBox("&Overwrite Existing Files", widget);
 	gridLayout->addWidget(mExport2BinOverwriteWidget, 1, 0);
-	
+
 	QSettings Settings;
 	mExport2BinOverwriteWidget->setChecked(Settings.value("Export2Bin_OverwriteFiles", true).toBool());
 
@@ -485,6 +515,44 @@ void mlMainWindow::InitExport2BinGUI()
 	dock->resize(QSize(256, 256));
 
 	mExport2BinGUIWidget = dock;
+}
+
+void mlMainWindow::InitGDTCreator()
+{
+	QDockWidget *dock = new QDockWidget(this, NULL);
+	dock->setWindowTitle("Quick GDT Creator");
+	dock->setFloating(true);
+
+	QWidget* widget = new QWidget(dock);
+	QGridLayout* gridLayout = new QGridLayout();
+	widget->setLayout(gridLayout);
+	dock->setWidget(widget);
+
+	GDTCreator* groupBox = new GDTCreator(dock, this);
+	gridLayout->addWidget(groupBox, 0, 0,1,0);
+
+	QLabel* label = new QLabel("Drag Files Here", groupBox);
+	label->setAlignment(Qt::AlignCenter);
+	QVBoxLayout* groupBoxLayout = new QVBoxLayout(groupBox);
+	groupBoxLayout->addWidget(label);
+	groupBox->setLayout(groupBoxLayout);
+
+	mOpenAPEAfterCreation = new QCheckBox("Open APE After Creation", widget);
+	mAutoCopyAssetsAfterGDTCreation = new QCheckBox("Copy Assets After Creation", widget); //Doesn't Need A Settings.
+
+	gridLayout->addWidget(mOpenAPEAfterCreation, 1, 0);
+	gridLayout->addWidget(mAutoCopyAssetsAfterGDTCreation,1,1);
+
+	QSettings Settings;
+	mOpenAPEAfterCreation->setChecked(Settings.value("GDTCreate_OpenAPEAfterCreation", true).toBool());
+
+	connect(mOpenAPEAfterCreation, SIGNAL(clicked()), this, SLOT(OnOpenAPEAfterToggle()));
+
+	groupBox->setAcceptDrops(true);
+
+	dock->resize(QSize(256, 256));
+
+	mGDTCreatorGUIWidget = dock;
 }
 
 void mlMainWindow::closeEvent(QCloseEvent* Event)
@@ -516,13 +584,19 @@ void mlMainWindow::UpdateDB()
 
 void mlMainWindow::StartBuildThread(const QList<QPair<QString, QStringList>>& Commands)
 {
-	mBuildButton->setText("Cancel");
-	mOutputWidget->clear();
+	if(mBuildThread == NULL)
+	{
+		mBuildButton->setText("Cancel");
 
-	mBuildThread = new mlBuildThread(Commands, mIgnoreErrorsWidget->isChecked());
-	connect(mBuildThread, SIGNAL(OutputReady(QString)), this, SLOT(BuildOutputReady(QString)));
-	connect(mBuildThread, SIGNAL(finished()), this, SLOT(BuildFinished()));
-	mBuildThread->start();
+		mBuildThread = new mlBuildThread(Commands, mIgnoreErrorsWidget->isChecked());
+		connect(mBuildThread, SIGNAL(OutputReady(QString)), this, SLOT(BuildOutputReady(QString)));
+		connect(mBuildThread, SIGNAL(finished()), this, SLOT(BuildFinished()));
+		mBuildThread->start();
+	}
+	else
+	{
+		QMessageBox::warning(NULL,"Task In Progress","There Is Already A Task In Progress.\nPlease Wait Or Cancel It!",QMessageBox::Ok);
+	}
 }
 
 void mlMainWindow::StartConvertThread(QStringList& pathList, QString& outputDir, bool allowOverwrite)
@@ -607,6 +681,7 @@ void mlMainWindow::ContextMenuRequested()
 		Menu->addAction(mActionFileLevelEditor);
 
 	Menu->addAction("Edit Zone File", this, SLOT(OnOpenZoneFile()));
+
 	Menu->addAction(QString("Open %1 Folder").arg(ItemType), this, SLOT(OnOpenModRootFolder()));
 
 	Menu->addSeparator();
@@ -649,6 +724,17 @@ void mlMainWindow::OnFileExport2Bin()
 	}
 
 	mExport2BinGUIWidget->isVisible() ? mExport2BinGUIWidget->hide() : mExport2BinGUIWidget->show();
+}
+
+void mlMainWindow::OnFileGDTCreator()
+{
+	if (mGDTCreatorGUIWidget == NULL)
+	{
+		InitGDTCreator();
+		mGDTCreatorGUIWidget->hide();
+	}
+
+	mGDTCreatorGUIWidget->isVisible() ? mGDTCreatorGUIWidget->hide() : mGDTCreatorGUIWidget->show();
 }
 
 void mlMainWindow::OnFileNew()
@@ -832,12 +918,13 @@ void mlMainWindow::OnEditBuild()
 				AddUpdateDBCommand();
 
 				QStringList Args;
-				Args << "-platform" << "pc";
 
-				if (mCompileModeWidget->currentIndex() == 0)
-					Args << "-onlyents";
-				else
-					Args << "-navmesh" << "-navvolume";
+				
+					Args << "-platform" << "pc";
+					if (mCompileModeWidget->currentIndex() == 0)
+						Args << "-onlyents";
+					else
+						Args << "-navmesh" << "-navvolume";
 
 				Args << "-loadFrom" << QString("%1\\map_source\\%2\\%3.map").arg(mGamePath, MapName.left(2), MapName);
 				Args << QString("%1\\share\\raw\\maps\\%2\\%3.d3dbsp").arg(mGamePath, MapName.left(2), MapName);
@@ -908,10 +995,6 @@ void mlMainWindow::OnEditBuild()
 
 		if (!LastMap.isEmpty())
 			Args << "+devmap" << LastMap;
-
-		QString ExtraOptions = mRunOptionsWidget->text();
-		if (!ExtraOptions.isEmpty())
-			Args << ExtraOptions.split(' ');
 
 		Commands.append(QPair<QString, QStringList>(QString("%1/BlackOps3.exe").arg(mGamePath), Args));
 	}
@@ -1130,6 +1213,12 @@ void mlMainWindow::OnEditOptions()
 	Checkbox->setChecked(Settings.value("UseDarkTheme", false).toBool());
 	Layout->addWidget(Checkbox);
 
+	QCheckBox* InBuiltEditor = new QCheckBox("Use Built-In Zone Editor");
+	InBuiltEditor->setToolTip("Toggle between using default zone file editor, or the inbult one. (BETA)");
+	InBuiltEditor->setChecked(Settings.value("InBuiltEditor",false).toBool());
+	Layout->addWidget(InBuiltEditor);
+
+
 	QHBoxLayout* LanguageLayout = new QHBoxLayout();
 	LanguageLayout->addWidget(new QLabel("Build Language:"));
 
@@ -1160,10 +1249,11 @@ void mlMainWindow::OnEditOptions()
 
 	mBuildLanguage = LanguageCombo->currentText();
 	mTreyarchTheme = Checkbox->isChecked();
+	mUseBuiltInEditor = InBuiltEditor->isChecked();
 
 	Settings.setValue("BuildLanguage", mBuildLanguage);
 	Settings.setValue("UseDarkTheme", mTreyarchTheme);
-
+	Settings.setValue("InBuiltEditor",mUseBuiltInEditor);
 	UpdateTheme();
 }
 
@@ -1184,6 +1274,9 @@ void mlMainWindow::UpdateTheme()
 		qApp->setStyleSheet("");
 	}
 }
+
+
+
 
 void mlMainWindow::OnEditDvars()
 {
@@ -1242,6 +1335,9 @@ void mlMainWindow::OnEditDvars()
 		case DVAR_VALUE_STRING:
 			dvarValue = Dvar::setDvarSetting(dvar, (QLineEdit*)widget);
 			break;
+		case DVAR_VALUE_COMBO:
+			dvarValue = Dvar::setDvarSetting(dvar,(QComboBox*)widget);
+			break;
 		}
 
 		if(!dvarValue.toLatin1().isEmpty())
@@ -1250,6 +1346,7 @@ void mlMainWindow::OnEditDvars()
 				mRunDvars << "+set" << dvarName;
 			else			// hack for cmds
 				mRunDvars << QString("+%1").arg(dvarName);
+
 			mRunDvars << dvarValue;
 		}
 		size++;
@@ -1309,26 +1406,26 @@ void mlMainWindow::UpdateWorkshopItem()
 
 	SteamUGC()->SetItemTags(UpdateHandle, &Tags);
 
-	 SteamAPICall_t SteamAPICall = SteamUGC()->SubmitItemUpdate(UpdateHandle, "");
-	 mSteamCallResultUpdateItem.Set(SteamAPICall, this, &mlMainWindow::OnUpdateItemResult);
+	SteamAPICall_t SteamAPICall = SteamUGC()->SubmitItemUpdate(UpdateHandle, "");
+	mSteamCallResultUpdateItem.Set(SteamAPICall, this, &mlMainWindow::OnUpdateItemResult);
 
-	 QProgressDialog Dialog(this);
-	 Dialog.setLabelText(QString("Uploading workshop item '%1'...").arg(QString::number(mFileId)));
-	 Dialog.setCancelButton(NULL);
-	 Dialog.setWindowModality(Qt::WindowModal);
-	 Dialog.show();
+	QProgressDialog Dialog(this);
+	Dialog.setLabelText(QString("Uploading workshop item '%1'...").arg(QString::number(mFileId)));
+	Dialog.setCancelButton(NULL);
+	Dialog.setWindowModality(Qt::WindowModal);
+	Dialog.show();
 
-	 for (;;)
-	 {
-		 uint64 Processed, Total;
-		 if (SteamUGC()->GetItemUpdateProgress(SteamAPICall, &Processed, &Total) == k_EItemUpdateStatusInvalid)
-			 break;
+	for (;;)
+	{
+		uint64 Processed, Total;
+		if (SteamUGC()->GetItemUpdateProgress(SteamAPICall, &Processed, &Total) == k_EItemUpdateStatusInvalid)
+			break;
 
-		 Dialog.setMaximum(Total);
-		 Dialog.setValue(Processed);
-		 QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
-		 Sleep(100);
-	 }
+		Dialog.setMaximum(Total);
+		Dialog.setValue(Processed);
+		QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+		Sleep(100);
+	}
 }
 
 void mlMainWindow::OnCreateItemResult(CreateItemResult_t* CreateItemResult, bool IOFailure)
@@ -1373,24 +1470,54 @@ void mlMainWindow::OnHelpAbout()
 	QMessageBox::about(this, "About Modtools Launcher", "Treyarch Modtools Launcher\nCopyright 2016 Treyarch");
 }
 
+void mlMainWindow::OnOpenDocs()
+{
+	ShellExecute(NULL,"open",QString("%1/docs_modtools").arg(mGamePath).toLatin1().constData(),"",NULL,SW_SHOWDEFAULT);
+}
+
+void mlMainWindow::OnSaveOutput()
+{
+	QFile* Output = new QFile("Output.txt");
+	if(Output->open(QIODevice::WriteOnly | QIODevice::Text))
+	{
+		QTextStream Out(Output);
+		Out << (mOutputWidget->toPlainText());
+		Out.flush();
+		QMessageBox::information(this,"Saved Console Output","Saved Console Output To: Output.txt",QMessageBox::Ok);
+	}
+	else
+	{
+		QMessageBox::warning(this,"Failed To Save Console Output!","Failed To Save!: "+Output->errorString(),QMessageBox::Ok);
+	}
+	Output->close();
+}
+
 void mlMainWindow::OnOpenZoneFile()
 {
 	QList<QTreeWidgetItem*> ItemList = mFileListWidget->selectedItems();
 	if (ItemList.isEmpty())
 		return;
-	
+
 	QTreeWidgetItem* Item = ItemList[0];
 
 	if (Item->data(0, Qt::UserRole).toInt() == ML_ITEM_MAP)
 	{
 		QString MapName = Item->text(0);
-		ShellExecute(NULL, "open", QString("\"%1/usermaps/%2/zone_source/%3.zone\"").arg(mGamePath, MapName, MapName).toLatin1().constData(), "", NULL, SW_SHOWDEFAULT);
+		mZonePath = QString("%1/usermaps/%2/zone_source/%3.zone").arg(mGamePath, MapName, MapName);
+		if(mUseBuiltInEditor)
+			OpenZoneEditor();
+		else
+			ShellExecute(NULL, "open", mZonePath.toLatin1().constData(), "", NULL, SW_SHOWDEFAULT);
 	}
 	else
 	{
 		QString ModName = Item->parent()->text(0);
 		QString ZoneName = Item->text(0);
-		ShellExecute(NULL, "open", (QString("\"%1/mods/%2/zone_source/%3.zone\"").arg(mGamePath, ModName, ZoneName)).toLatin1().constData(), "", NULL, SW_SHOWDEFAULT);
+		mZonePath = QString("%1/mods/%2/zone_source/%3.zone").arg(mGamePath, ModName, ZoneName);
+		if(mUseBuiltInEditor)
+			OpenZoneEditor();
+		else
+			ShellExecute(NULL, "open", mZonePath.toLatin1().constData(), "", NULL, SW_SHOWDEFAULT);
 	}
 }
 
@@ -1440,10 +1567,6 @@ void mlMainWindow::OnRunMapOrMod()
 		QString ModName = Item->parent() ? Item->parent()->text(0) : Item->text(0);
 		Args << ModName;
 	}
-
-	QString ExtraOptions = mRunOptionsWidget->text();
-	if (!ExtraOptions.isEmpty())
-		Args << ExtraOptions.split(' ');
 
 	QList<QPair<QString, QStringList>> Commands;
 	Commands.append(QPair<QString, QStringList>(QString("%1/BlackOps3.exe").arg(mGamePath), Args));
@@ -1540,6 +1663,12 @@ void mlMainWindow::OnExport2BinToggleOverwriteFiles()
 	Settings.setValue("Export2Bin_OverwriteFiles", mExport2BinOverwriteWidget->isChecked());
 }
 
+void mlMainWindow::OnOpenAPEAfterToggle()
+{
+	QSettings Settings;
+	Settings.setValue("GDTCreate_OpenAPEAfterCreation", mOpenAPEAfterCreation->isChecked());
+}
+
 void mlMainWindow::BuildOutputReady(QString Output)
 {
 	mOutputWidget->appendPlainText(Output);
@@ -1550,6 +1679,168 @@ void mlMainWindow::BuildFinished()
 	mBuildButton->setText("Build");
 	mBuildThread->deleteLater();
 	mBuildThread = NULL;
+}
+
+void mlMainWindow::OnConvertButton()
+{
+	QList<QPair<QString, QStringList>> Commands;
+	Commands.append(QPair<QString, QStringList>(QString("%1/bin/linker_modtools.exe").arg(mToolsPath), QStringList() << "-language" << "english" << "-convertall" << "-verbose"));
+
+	StartBuildThread(Commands);
+}
+
+void mlMainWindow::OpenZoneEditor()
+{
+	InitZoneEditor();
+	mZoneEditorGUIWidget->hide();
+
+	mZoneEditorGUIWidget->isVisible() ? mZoneEditorGUIWidget->hide() : mZoneEditorGUIWidget->show();
+}
+
+void mlMainWindow::InitZoneEditor()
+{
+	QDockWidget *Dock = new QDockWidget(this,NULL);
+	QWidget* Widget = new QWidget(Dock);
+	QGridLayout* GridLayout = new QGridLayout();
+	mZoneTextEdit = new QPlainTextEdit();
+	QPushButton* ZoneSave = new QPushButton();
+	QPushButton* ZoneCancel = new QPushButton();	
+
+	mFileTree = new QTreeView();
+	mScriptList = new QFileSystemModel(this);
+
+	mScriptList->setFilter(QDir::AllDirs | QDir::NoDotAndDotDot | QDir::Files | QDir::NoSymLinks);
+
+	mScriptList->setNameFilterDisables(false);
+
+	mScriptList->setRootPath(mToolsPath);
+
+	mFileTree->setModel(mScriptList);
+	mFileTree->setRootIndex(mScriptList->setRootPath(mToolsPath));
+
+	for (int x = 1; x < mScriptList->columnCount(); x++)
+		mFileTree->hideColumn(x);
+
+	Dock->resize(QSize(720,720));
+	Dock->setWindowTitle("Zone Editor");
+	Dock->setFloating(true);
+	Dock->setWidget(Widget);
+
+	Widget->setLayout(GridLayout);
+
+	ZoneSave->setText("Save");
+	ZoneCancel->setText("Cancel");
+
+	connect(ZoneSave, SIGNAL(clicked()), this, SLOT(OnSaveZone()));
+	connect(ZoneCancel,SIGNAL(clicked()),this,SLOT(OnCancelZone()));
+	connect(mZoneTextEdit, SIGNAL(textChanged()),this,SLOT(OnTextChanged()));
+
+	connect(mFileTree->selectionModel(), SIGNAL(selectionChanged(const QItemSelection&,const QItemSelection&)), this, SLOT(OnItemSelected(const QItemSelection&,const QItemSelection&)));
+
+
+	ZoneFile = new QFile(mZonePath);
+	if(!ZoneFile->open(QIODevice::ReadOnly))
+		QMessageBox::information(this, "Error!", ZoneFile->errorString());
+
+	QTextStream Read(ZoneFile);
+	while(!Read.atEnd()) {
+		mZoneTextEdit->appendPlainText(Read.readLine());        
+	}
+
+	ZoneFile->close();
+
+	GridLayout->addWidget(mFileTree,0,0);
+	GridLayout->addWidget(mZoneTextEdit,0,1);
+	GridLayout->addWidget(ZoneSave,1,0);
+	GridLayout->addWidget(ZoneCancel,1,1);
+
+	mZoneEditorGUIWidget = Dock;
+}
+
+void mlMainWindow::OnItemSelected(const QItemSelection& Selected, const QItemSelection& Deselected)
+{
+	if(mScriptList->hasChildren(mFileTree->currentIndex()))
+	{
+		QMessageBox::information(this,"Hold Up!","I Can't Add folders! Please Select A File.",QMessageBox::Ok);
+		return;
+	}
+
+	QModelIndexList ParentFolderList;
+	QStringList ParentFolderStringList;
+	ParentFolderList << mFileTree->currentIndex();
+
+	while (ParentFolderList.last().isValid() && ParentFolderList.last().parent().data().toString() != "raw") 
+	{
+		if(ParentFolderList.last().parent().data().toString() == "raw" || ParentFolderList.last().parent().data().toString() == "Call of Duty Black Ops III") //Don't Process If It's Out Of Raw, or how the hell did you get that far? Maybe I should prmopt them...?
+		{
+			QMessageBox::question(this,"Hold Up!","Hey! This File Isn't In Raw! Please Move It To Raw.",QMessageBox::No);
+			return;
+		}
+		ParentFolderList << ParentFolderList.last().parent();
+	}
+	foreach(const QModelIndex &CurrentIndex, ParentFolderList)
+	{
+		ParentFolderStringList << CurrentIndex.data(Qt::DisplayRole).toString();
+	}
+
+	std::reverse(ParentFolderStringList.begin(),ParentFolderStringList.end());
+
+	QInputDialog AssetType;
+	QStringList AssetList;
+	AssetList << "col_map" << "gfx_map" << "fx" << "scriptparsetree" << "rawfile" << "scriptbundle" << "xmodel" << "xanim" << "material" << "weaponfile" << "sound";
+	AssetType.setOption(QInputDialog::UseListViewForComboBoxItems);
+	AssetType.setWindowTitle("Asset Type");
+	AssetType.setLabelText("What Is This?:");
+	AssetType.setComboBoxItems(AssetList);
+	int Ret = AssetType.exec();
+
+	if (Ret != QDialog::Accepted)
+		return;
+
+	if(!AssetType.textValue().isEmpty())
+	{
+		mZoneTextEdit->appendPlainText(QString("%1,%2").arg(AssetType.textValue(),ParentFolderStringList.join("/")));
+		mOutputWidget->appendPlainText("Done");
+	}
+
+
+}
+
+void mlMainWindow::OnSaveZone()
+{
+	ZoneFile = new QFile(mZonePath);
+	if(ZoneFile->open(QIODevice::WriteOnly | QIODevice::Text))
+	{
+		QTextStream Out(ZoneFile);
+		Out << (mZoneTextEdit->toPlainText());
+		Out.flush();
+	}
+	else
+	{
+		QMessageBox::warning(this,"Failed To Save Zone!","Failed To Save!: "+ZoneFile->errorString(),QMessageBox::Ok);
+	}
+
+	ZoneFile->close();
+	mZoneEditorGUIWidget->close();
+}
+
+void mlMainWindow::OnCancelZone()
+{
+	if(ZoneFile->isOpen())
+		ZoneFile->close();
+
+	mZoneEditorGUIWidget->close();
+	return;
+}
+
+void mlMainWindow::OnTextChanged()
+{
+	SyntaxTimer.start(500);
+}
+
+void mlMainWindow::UpdateSyntax()
+{
+	Syntax* highlighter = new Syntax(mZoneTextEdit->document());
 }
 
 Export2BinGroupBox::Export2BinGroupBox(QWidget* parent, mlMainWindow* parent_window) : QGroupBox(parent), parentWindow(parent_window)
@@ -1581,7 +1872,7 @@ void Export2BinGroupBox::dropEvent(QDropEvent* event)
 		{
 			pathList.append(urlList.at(i).toLocalFile());
 		}
-		
+
 		QProcess* Process = new QProcess();
 		connect(Process, SIGNAL(finished(int)), Process, SLOT(deleteLater()));
 
@@ -1589,7 +1880,7 @@ void Export2BinGroupBox::dropEvent(QDropEvent* event)
 
 		QString outputDir = parentWindow->mExport2BinTargetDirWidget->text();
 		parentWindow->StartConvertThread(pathList, outputDir, allowOverwrite);
-		
+
 		event->acceptProposedAction();
 	}
 }
@@ -1597,4 +1888,75 @@ void Export2BinGroupBox::dropEvent(QDropEvent* event)
 void Export2BinGroupBox::dragLeaveEvent(QDragLeaveEvent* event)
 {
 	event->accept();
+}
+
+Syntax::Syntax(QTextDocument *parent) : QSyntaxHighlighter(parent)
+{
+	QSettings Settings;
+	SyntaxRule CurrentRule;
+
+	KeyWordFormat.setForeground(QColor("#63a058"));
+	QStringList Patterns;
+	Patterns << "col_map" << "gfx_map" << "fx" << "scriptparsetree" << "rawfile" << "scriptbundle" << "xmodel" << "xanim" << "material" << "weaponfile" << "sound"; //I Can't Find Docs On All, Would Be Nice To Get The Rest :).
+
+	foreach (const QString &Pattern, Patterns) {
+		CurrentRule.RegExPattern = QRegExp(Pattern);
+		CurrentRule.CharFormat = KeyWordFormat;
+		Rules.append(CurrentRule);
+	}
+
+	//Make It So I Can Set These Somehow?
+	IncludeFormat.setForeground(QColor(Settings.value("IncludeFormat_Color", "#fc8eac").toString()));
+	CurrentRule.RegExPattern = QRegExp("#[^\n]*"); //Start With #, Continue To New Line.
+	CurrentRule.CharFormat = IncludeFormat;
+	Rules.append(CurrentRule);
+
+	QuoteFormat.setForeground(QColor(Settings.value("QuoteFormat_Color","#6c6999").toString()));
+	CurrentRule.RegExPattern = QRegExp("\".*\""); //Start With ", Continue To Next ".
+	CurrentRule.CharFormat = QuoteFormat;
+	Rules.append(CurrentRule);
+
+	SingleLineCommentFormat.setForeground(QColor(Settings.value("SingleLineCommentFormat_Color","#c0e4ff").toString()));
+	CurrentRule.RegExPattern = QRegExp("//[^\n]*"); //Start With //, Continue To New Line.
+	CurrentRule.CharFormat = SingleLineCommentFormat;
+	Rules.append(CurrentRule);
+
+	PreProcessor.setForeground(QColor(Settings.value("PreProcessor_Color","#a09c85").toString()));
+	CurrentRule.RegExPattern = QRegExp(">[^\n]*"); //Start with >, Continue To New Line.
+	CurrentRule.CharFormat = PreProcessor;
+	Rules.append(CurrentRule);
+
+	MultiLineCommentFormat.setForeground(QColor(Settings.value("MultiLineCommentFormat_Color","#c0e4ff").toString()));
+	commentStartExpression = QRegExp("/\\*");
+	commentEndExpression = QRegExp("\\*/");
+}
+
+void Syntax::highlightBlock(const QString &text)
+{
+	foreach (const SyntaxRule &rule, Rules) {
+		QRegExp expression(rule.RegExPattern);
+		int index = expression.indexIn(text);
+		while (index >= 0) {
+			int length = expression.matchedLength();	
+			setFormat(index, length, rule.CharFormat);
+			index = expression.indexIn(text, index + length);
+		}
+	}
+	setCurrentBlockState(0);
+	int startIndex = 0;
+	if (previousBlockState() != 1)
+		startIndex = commentStartExpression.indexIn(text);
+	while (startIndex >= 0) {
+		int endIndex = commentEndExpression.indexIn(text, startIndex);
+		int commentLength;
+		if (endIndex == -1) {
+			setCurrentBlockState(1);
+			commentLength = text.length() - startIndex;
+		} else {
+			commentLength = endIndex - startIndex
+				+ commentEndExpression.matchedLength();
+		}
+		setFormat(startIndex, commentLength, MultiLineCommentFormat);
+		startIndex = commentStartExpression.indexIn(text, startIndex + commentLength);
+	}
 }
