@@ -249,8 +249,11 @@ mlMainWindow::mlMainWindow()
 	mUseBuiltInEditor= Settings.value("InBuiltEditor",false).toBool();
 	mOpenAPEAfter = Settings.value("GDTCreate_OpenAPEAfterCreation",false).toBool();
 
+	// Qt prefers '/' over '\\'
 	mGamePath = QString(getenv("TA_GAME_PATH")).replace('\\', '/');
 	mToolsPath = QString(getenv("TA_TOOLS_PATH")).replace('\\', '/');
+
+	UpdateTheme();
 
 	setWindowIcon(QIcon(":/resources/ModLauncher.png"));
 	setWindowTitle("Black Ops III Mod Tools Launcher");
@@ -356,8 +359,6 @@ mlMainWindow::mlMainWindow()
 	connect(&SyntaxTimer,SIGNAL(timeout()),this,SLOT(UpdateSyntax()));
 
 	PopulateFileList();
-
-	UpdateTheme();
 }
 
 mlMainWindow::~mlMainWindow()
