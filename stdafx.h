@@ -22,7 +22,7 @@
 #include "steam_api.h"
 
 #include "dvar.h"
-#include "cod2map.h"
+//#include "cod2map.h" Not Ready For Ship Yet.
 #include "GDTCreator.h"
 
 class mlMainWindow;

@@ -107,7 +107,7 @@ protected slots:
 	void OnEditPublish();
 	void OnEditOptions();
 	void OnEditDvars();
-	void OnEditCOD2MAPArgs();
+
 	void OnOpenDocs();
 	void OnHelpAbout();
 	void OnSaveOutput();
@@ -132,6 +132,7 @@ protected slots:
 	void OnCancelZone();
 	void OnItemSelected(const QItemSelection&,const QItemSelection&);
 
+
 protected:
 	void closeEvent(QCloseEvent* Event);
 
@@ -150,14 +151,12 @@ protected:
 	void InitExport2BinGUI();
 	void InitZoneEditor();
 	void InitGDTCreator();
-	
-	void InitCod2MapArgs();
-	//void InitLinkerArgs(); Need Docs On This So I can add tool-tips.
+
+
 
 	bool mTreyarchTheme;
 	bool mUseBuiltInEditor;
 	bool mOpenAPEAfter;
-	bool mUseExpertZone;
 
 	QString mIncludeFormat;
 	QString mQuoteFormat;
@@ -188,7 +187,7 @@ protected:
 	QPushButton* mBuildButton;
 	QPushButton* mDvarsButton;
 	QPushButton* mConvertButton;
-	QPushButton* mCOD2MAPOptionsButton;
+
 
 	QCheckBox* mCompileEnabledWidget;
 	QCheckBox* mLightEnabledWidget;
@@ -213,6 +212,7 @@ protected:
 	QDockWidget* mExport2BinGUIWidget;
 	QDockWidget* mZoneEditorGUIWidget;
 	QDockWidget* mGDTCreatorGUIWidget;
+	QDockWidget* mColorChangeWidget;
 
 	QString mBuildLanguage;
 	QString mTitle;
@@ -227,7 +227,7 @@ protected:
 
 	QStringList mTags;
 	QStringList mRunDvars;
-	QStringList mCod2MapArgs;
+
 
 	QTimer mTimer;
 	QTimer SyntaxTimer;

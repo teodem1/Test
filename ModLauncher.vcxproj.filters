@@ -58,9 +58,6 @@
     <ClCompile Include="dvar.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="cod2map.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="GDTCreator.cpp">
       <Filter>Source Files\GDT</Filter>
     </ClCompile>
@@ -86,9 +83,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="dvar.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="cod2map.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="GDTCreator.h">

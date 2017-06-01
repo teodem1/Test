@@ -305,7 +305,6 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="cod2map.cpp" />
     <ClCompile Include="dvar.cpp" />
     <ClCompile Include="GDTCreator.cpp" />
     <ClCompile Include="GeneratedFiles\Debug\moc_mlMainWindow.cpp">
@@ -457,7 +456,6 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="cod2map.h" />
     <ClInclude Include="dvar.h" />
     <ClInclude Include="GDTCreator.h" />
   </ItemGroup>
